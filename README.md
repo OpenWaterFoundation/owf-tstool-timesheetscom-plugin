@@ -67,6 +67,8 @@ Additionally, the following table lists Eclipse project dependencies that are no
 
 This section explains how to add the TSTool `timesheets.com` plugin to the TSTool core development environment.
 
+The Maven project was initially created as described in the [initialization README](doc-init/README.md).
+
 1.  If not already installed, install the
     [Maven command line tools](https://maven.apache.org/install),
     which are used by scripts outside of Eclipse's built-in Maven tools.
