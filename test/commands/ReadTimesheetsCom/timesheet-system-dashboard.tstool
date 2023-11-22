@@ -1,0 +1,241 @@
+CreateFolder(Folder="downloads",CreateParentFolders="True",IfFolderExists="Ignore")
+CreateFolder(Folder="results",CreateParentFolders="True",IfFolderExists="Ignore")
+StartLog(LogFile="results/timesheet-system-dashboard.tstool.log")
+# Process TriLynx timesheet data into report and graph summarizing support hour status:
+# - data file is exported from timesheets.com using "View Report: Detailed Text"
+# - make sure that "Group Report By" is set to "None"
+# - make sure that "Include Work Notes When Downloading" is selected
+# - summarize all hours for each "Support" project
+#
+# Overall configuration:
+# - root URL for web service API, constant for all requests
+# - maximum number of rows returned, mainly will impact data records
+SetProperty(PropertyName="TimesheetsApiUrl",PropertyType="String",PropertyValue="https://secure05v.timesheets.com/api/public/v1")
+# SetProperty(PropertyName="TimesheetsApiUrl",PropertyType=String,PropertyValue="https://secure.timesheets.com/api/public/v1")
+SetProperty(PropertyName="MaxRowCount",PropertyType="Integer",PropertyValue="1000")
+# Query time has a fixed start through current day:
+# - StartDay and EndDay can be used for full period data queries, but API may not allow
+# - use StartDay2020, EndDay2020, etc. to process each year separately
+SetProperty(PropertyName="StartDay",PropertyType="DateTime",PropertyValue="2020-01-01")
+SetProperty(PropertyName="StartDayCurrentYear",PropertyType="DateTime",PropertyValue="2022-01-01")
+SetProperty(PropertyName="EndWeek1CurrentYear",PropertyType="DateTime",PropertyValue="2022-01-07")
+SetProperty(PropertyName="EndDayCurrentYear",PropertyType="DateTime",PropertyValue="CurrentToDay")
+SetProperty(PropertyName="EndDay",PropertyType="DateTime",PropertyValue="${EndDayCurrentYear}")
+SetInputPeriod(InputStart="${StartDay}",InputEnd="${EndDayCurrentYear}")
+# Hard code the individual years for now but could calculate from above.
+SetProperty(PropertyName="StartDay2020",PropertyType="DateTime",PropertyValue="2020-01-01")
+SetProperty(PropertyName="EndDay2020",PropertyType="DateTime",PropertyValue="2020-12-31")
+SetProperty(PropertyName="StartDay2021",PropertyType="DateTime",PropertyValue="2021-01-01")
+SetProperty(PropertyName="EndDay2021",PropertyType="DateTime",PropertyValue="2021-12-31")
+SetProperty(PropertyName="StartDay2022",PropertyType="DateTime",PropertyValue="2022-01-01")
+SetProperty(PropertyName="EndDay2022",PropertyType="DateTime",PropertyValue="2022-12-31")
+# Employee ID (USERID) to retrieve data, used for hourly and project retrievals:
+# - include all TriLynx staff, even ex-employees, to reflect all hours billed
+SetProperty(PropertyName="EmployeeIdList",PropertyType="String",PropertyValue="212173")
+#
+# Step 1 - set properties for authorization
+NewObject(ObjectID="TimesheetConfig",InputFile="${UserHomeDir}/AppData/Local/Timesheets/api-key.json")
+SetPropertyFromObject(ObjectID="TimesheetConfig",ObjectProperty="data.apikey",PropertyName="TimesheetAuthApiKey")
+SetPropertyFromObject(ObjectID="TimesheetConfig",ObjectProperty="data.token",PropertyName="TimesheetAuthToken")
+# SetProperty(PropertyName="TimesheetsApiHeaders",PropertyType=String,PropertyValue="apikey:${TimesheetAuthApiKey},x-ts-authorization:${TimesheetAuthToken}")
+SetProperty(PropertyName="TimesheetsApiHeaders",PropertyType="String",PropertyValue="apikey:${TimesheetAuthApiKey},x-ts-authorization:${TimesheetAuthToken}")
+SetProperty(PropertyName="TimesheetsApiCookies",PropertyType="String",PropertyValue="FORDMUSTANG:test")
+#
+# Step 2 - download the current data from timesheets.com
+#
+# Account codes:
+# - from service: /items/accountcode
+WebGet(URI="${TimesheetsApiUrl}/items/accountcode?MaxRows=${MaxRowCount}",HttpHeaders="${TimesheetsApiHeaders}",LocalFile="downloads/accountcode.json")
+ReadTableFromJSON(InputFile="downloads/accountcode.json",TableID="accountcode",ArrayName="Data",DoubleColumns="DEFAULTPAYRATE,USERPAYRATE,DEFAULTUSERPAYRATE",IntegerColumns="ACCOUNTCODEID,CREATORUSERID,READONLY,ACCOUNTCODESTATUS")
+#
+# Constants:
+# - from service: /server/constants
+# - TODO smalers 2022-12-06 this is a dictionary so need to either set properties one by one
+#   or enhance software to handle a wildcard for all objects
+WebGet(URI="${TimesheetsApiUrl}/server/constants",HttpHeaders="${TimesheetsApiHeaders}",LocalFile="downloads/constants.json")
+# ReadTableFromJSON(TableID="constants",InputFile="downloads/constants.json",ArrayName="Data")
+#
+# Customers:
+# - from service: /items/customer
+WebGet(URI="${TimesheetsApiUrl}/items/customer?MaxRows=${MaxRowCount}",HttpHeaders="${TimesheetsApiHeaders}",LocalFile="downloads/customer.json")
+ReadTableFromJSON(InputFile="downloads/customer.json",TableID="customer",ArrayName="Data",IntegerColumns="CUSTOMERID,COMPANYID,CREATORUSERID,CUSTOMERSTATUS,READONLY")
+#
+# Hourly timesheet records:
+# - from service: /report/hourly/record/history
+# - not sure if this is the correct service to use
+# - can only query up to 366 days at a time so loop and append the records
+# - read data for each year separately since there is a 366 day limit on queries
+/*
+WebGet(URI="${TimesheetsApiUrl}/report/hourly/record/history?MaxRows=${MaxRowCount}&StartDate=${StartDay2020}&EndDate=${EndDay2020}&EmployeeID=${EmployeeIdList}",HttpHeaders="${TimesheetsApiHeaders}",LocalFile="downloads/hourly-record-history-2020.json")
+ReadTableFromJSON(InputFile="downloads/hourly-record-history-2020.json",TableID="hourly_record_history",ArrayName="Data")
+WebGet(URI="${TimesheetsApiUrl}/report/hourly/record/history?MaxRows=${MaxRowCount}&StartDate=${StartDay2021}&EndDate=${EndDay2021}&EmployeeID=${EmployeeIdList}",HttpHeaders="${TimesheetsApiHeaders}",LocalFile="downloads/hourly-record-history-2021.json")
+ReadTableFromJSON(InputFile="downloads/hourly-record-history-2021.json",TableID="hourly_record_history",ArrayName="Data")
+WebGet(URI="${TimesheetsApiUrl}/report/hourly/record/history?MaxRows=${MaxRowCount}&StartDate=${StartDay2022}&EndDate=${EndDay2022}&EmployeeID=${EmployeeIdList}",HttpHeaders="${TimesheetsApiHeaders}",LocalFile="downloads/hourly-record-history-2022.json")
+ReadTableFromJSON(InputFile="downloads/hourly-record-history-2022.json",TableID="hourly_record_history",ArrayName="Data")
+*/
+#
+# Try to use customizable records:
+# = from service: /report/hourly/customizable/unprocessed
+WebGet(URI="${TimesheetsApiUrl}/report/hourly/customizable/unprocessed?StartDate=${StartDay2020}&EndDate=${EndDay2020}&AllEmployees=1&AllAccountCodes=1&IncludeWorkDescription=1&ReportType=Detailed&GroupType=Project",HttpHeaders="${TimesheetsApiHeaders}",LocalFile="downloads/hourly-customizable-unprocessed-2020.json")
+ReadTableFromJSON(InputFile="downloads/hourly-customizable-unprocessed-2020.json",TableID="hourly_customizable_unprocessed",ArrayName="Data")
+#
+# Projects:
+# - from service: /items/project
+# - do an additional check to make sure that the max has not been hit
+WebGet(URI="${TimesheetsApiUrl}/items/project?MaxRows=${MaxRowCount}",HttpHeaders="${TimesheetsApiHeaders}",LocalFile="downloads/project.json")
+ReadTableFromJSON(InputFile="downloads/project.json",TableID="project",ArrayName="Data",DoubleColumns="DEFAULTBILLRATE,USERBILLRATE,DEFAULTUSERBILLRATE",IntegerColumns="MINIMUMTIMEINCREMENT,CREATORUSERID,READONLY,PROJECTSTATUS",RowCountProperty="projectRowCount")
+If(Name="projectRowCount",Condition="${projectRowCount} == ${MaxRowCount}")
+Message(Message="The number of project table rows (${projectRowCount}) is the maximum.  Increase the maximum to retrieve all data.",CommandStatus="FAILURE")
+EndIf(Name="projectRowCount")
+#
+# Users:
+# - from service: /users
+WebGet(URI="${TimesheetsApiUrl}/users?MaxRows=${MaxRowCount}",HttpHeaders="${TimesheetsApiHeaders}",LocalFile="downloads/users.json")
+ReadTableFromJSON(InputFile="downloads/users.json",TableID="users",ArrayName="Data",IntegerColumns="USERID,ADMINUSERID,EMPLOYEENUMBER,USERSTATUS")
+#
+# Exit until logic is updated.
+Exit()
+#
+# Step 1a - read the csv file exported from timesheets.com
+# - use dated filenames for previous year and generic ProjectReport.csv for current year
+# Read current year data.
+ReadTableFromDelimitedFile(TableID="TimesheetDataFromFile2022",InputFile="downloads/ProjectReport.csv",SkipLines="1-8",HeaderLines="9",DoubleColumns="Hours,Bill Rate,Bill Total,Cost Rate,Cost Total")
+DeleteTableRows(TableID="TimesheetDataFromFile2022",Condition="Customer isempty")
+# Read 2021 data.
+ReadTableFromDelimitedFile(TableID="TimesheetDataFromFile2021",InputFile="downloads/ProjectReport-2021.csv",SkipLines="1-8",HeaderLines="9",DoubleColumns="Hours,Bill Rate,Bill Total,Cost Rate,Cost Total")
+DeleteTableRows(TableID="TimesheetDataFromFile2021",Condition="Customer isempty")
+# Read 2020 data.
+ReadTableFromDelimitedFile(TableID="TimesheetDataFromFile2020",InputFile="downloads/ProjectReport-2020.csv",SkipLines="1-8",HeaderLines="9",DoubleColumns="Hours,Bill Rate,Bill Total,Cost Rate,Cost Total")
+DeleteTableRows(TableID="TimesheetDataFromFile2020",Condition="Customer isempty")
+#
+# Step 1b - transfer timesheets.com data into a SQLite database:
+# - remove the old database file first
+# - then create an in-memory database
+# - then save to a file as an archive ('backup to' must be lowercase)
+RemoveFile(InputFile="results/timesheets.db",IfNotFound="Ignore")
+NewSQLiteDatabase(DataStore="TimesheetsDatabaseMemory",DatabaseFile="Memory")
+RunSql(DataStore="TimesheetsDatabaseMemory",SqlFile="sql/create-sqlite-database.sql")
+WriteTableToDataStore(TableID="TimesheetDataFromFile2020",DataStore="TimesheetsDatabaseMemory",DataStoreTable="ProjectReport",ColumnMap="Last Name:LastName,First Name:FirstName,Employee Number:EmployeeNumber,Job Title:JobTitle,Customer Number:CustomerNumber,Account Code:AccountCode,Bill Rate:BillRate,Bill Total:BillTotal,Cost Rate:CostRate,Cost Total:CostTotal,IP Address:IpAddress,Work Notes:WorkNotes,Date:DateText",WriteMode="Insert")
+WriteTableToDataStore(TableID="TimesheetDataFromFile2021",DataStore="TimesheetsDatabaseMemory",DataStoreTable="ProjectReport",ColumnMap="Last Name:LastName,First Name:FirstName,Employee Number:EmployeeNumber,Job Title:JobTitle,Customer Number:CustomerNumber,Account Code:AccountCode,Bill Rate:BillRate,Bill Total:BillTotal,Cost Rate:CostRate,Cost Total:CostTotal,IP Address:IpAddress,Work Notes:WorkNotes,Date:DateText",WriteMode="Insert")
+WriteTableToDataStore(TableID="TimesheetDataFromFile2022",DataStore="TimesheetsDatabaseMemory",DataStoreTable="ProjectReport",ColumnMap="Last Name:LastName,First Name:FirstName,Employee Number:EmployeeNumber,Job Title:JobTitle,Customer Number:CustomerNumber,Account Code:AccountCode,Bill Rate:BillRate,Bill Total:BillTotal,Cost Rate:CostRate,Cost Total:CostTotal,IP Address:IpAddress,Work Notes:WorkNotes,Date:DateText",WriteMode="Insert")
+RunSql(DataStore="TimesheetsDatabaseMemory",Sql="backup to ${WorkingDirPortable}/results/TimesheetsDatabase.db")
+#
+# Step 1c - filter the full project table into SystemId for "Support" and "Annual Software Updates" projects:
+# - old (commented) code used table from the file read
+# - new code queries the database
+# CopyTable(TableID="TimesheetDataFromFile",NewTableID="SupportProjects",DistinctColumns="Project",ColumnFilters="Project:*- Support",ColumnExcludeFilters="Project:Unassigned")
+# SortTable(TableID="SupportProjects",SortColumns="Project,Date")
+ReadTableFromDataStore(DataStore="TimesheetsDatabaseMemory",Sql="SELECT DISTINCT Customer as SystemId FROM ProjectReport WHERE ((Project LIKE '%- Support') AND (SystemId != 'Unassigned') AND (SystemId != 'TriLynx Systems') AND (SystemId != '') AND (SystemId NOT NULL) ) ORDER BY SystemId",TableID="SupportSystemIdList",RowCountProperty="SupportSystemIdCount")
+ReadTableFromDataStore(DataStore="TimesheetsDatabaseMemory",Sql="SELECT DISTINCT Customer as SystemId FROM ProjectReport WHERE ((Project LIKE '%- Annual Software Updates') AND (SystemId != 'Unassigned') AND (SystemId != 'TriLynx Systems') AND (SystemId != '') AND (SystemId NOT NULL) ) ORDER BY SystemId",TableID="AnnualSoftwareUpdatesSystemIdList",RowCountProperty="AnnualSoftwareUpdatesSystemIdCount")
+#
+# Step 1d - filter the project list to get a unique list of employees
+ReadTableFromDataStore(DataStore="TimesheetsDatabaseMemory",Sql="SELECT DISTINCT LastName FROM ProjectReport ORDER BY LastName",TableID="StaffList",RowCountProperty="StaffListCount")
+#
+# Step 1e - filter the full data to only include "Support" project data records, and separately "Annual Software Updates" hours
+# - old (commented) code used table copy
+# - new code does SQL query
+# CopyTable(TableID="TimesheetData",NewTableID="SupportProjectData",ColumnFilters="Project:*- Support",ColumnExcludeFilters="Project:Unassigned")
+# SortTable(TableID="SupportProjectData",SortColumns="Project,Date")
+ReadTableFromDataStore(DataStore="TimesheetsDatabaseMemory",Sql="SELECT * from ProjectReport WHERE Project LIKE '%- Support'",TableID="SupportProjectData",RowCountProperty="SupportProjectDataCount")
+ReadTableFromDataStore(DataStore="TimesheetsDatabaseMemory",Sql="SELECT * from ProjectReport WHERE Project LIKE '%- Annual Software Updates'",TableID="AnnualSoftwareUpdatesProjectData",RowCountProperty="AnnualSoftwareUpdatesProjectDataCount")
+#
+# Step 1f - read the spreadsheet with system information data
+# - this includes number of nodes, support year, etc.
+#
+ReadTableFromExcel(TableID="SystemInfo",InputFile="data/system-info.xlsx",Worksheet="SupportHours",ExcelAddress="A1:AI35",ExcelColumnNames="FirstRowInRange",ExcelDoubleColumns="SuppertHoursPerNode,SupporHoursAdjust,SupportHoursCap,AnnualSoftwareUpdateHoursPerNode,UpdatesHoursAdjust,AnnualSoftwareUpdatesHoursCap,SupportRate,AnnualCostPerNode",ExcelIntegerColumns="Nodes")
+#
+# Step 1g - update the table inserts to have the end date
+# - currently the 'FormatFile' command does not expand the inserted content
+TextEdit(InputFile="data/support-worknotes-insert.md",SearchFor="${EndDayCurrentYear}",ReplaceWith="${EndDayCurrentYear}",OutputFile="results/support-worknotes-insert.md")
+TextEdit(InputFile="data/annual-software-updates-worknotes-insert.md",SearchFor="${EndDayCurrentYear}",ReplaceWith="${EndDayCurrentYear}",OutputFile="results/annual-software-updates-worknotes-insert.md")
+#
+# Step 2 - convert project data into daily time series
+# - create a time series for each system, and a total for "AllSystems"
+# - do a check for data at the start and end of each file to make sure that it was exported for the full period
+#
+# "Support" projects.
+TableToTimeSeries(TableID="SupportProjectData",DateColumn="DateText",LocationColumn="Customer",ValueColumn="Hours",DataSource="TriLynx",DataType="SupportHours",Interval="Day",Units="Hours",HandleDuplicatesHow="Add")
+TableToTimeSeries(TableID="SupportProjectData",DateColumn="DateText",LocationID="AllSystems",ValueColumn="Hours",DataSource="TriLynx",DataType="SupportHours",Interval="Day",Units="Hours",HandleDuplicatesHow="Add",Alias="AllSystems-SupportHours")
+CalculateTimeSeriesStatistic(TSList="AllMatchingTSID",TSID="AllSystems-SupportHours",Statistic="NonmissingCount",AnalysisStart="${StartDayCurrentYear}",AnalysisEnd="${EndWeek1CurrentYear}",StatisticValueProperty="AllSystemsCurrentYearWeek1DataCount")
+If(Name="If_MissingCurrentYearData",Condition="${AllSystemsCurrentYearWeek1DataCount} == 0")
+Message(Message="No data for first week of current year - verify that data export started on January 1.",CommandStatus="FAILURE")
+EndIf(Name="If_MissingCurrentYearData")
+#
+# "Annual Software Updates" projects.
+TableToTimeSeries(TableID="AnnualSoftwareUpdatesProjectData",DateColumn="DateText",LocationColumn="Customer",ValueColumn="Hours",DataSource="TriLynx",DataType="AnnualSoftwareUpdatesHours",Interval="Day",Units="Hours",HandleDuplicatesHow="Add")
+#
+# Step 3 - fill time series with zeros and cumulate so that graphs can be created:
+# - can treat all time series the same way
+FillConstant(ConstantValue="0")
+#
+# Step 4 - automate graph creation using a template:
+# - each SystemId is processed
+# - may result in errors if a system does not have any support hours,
+#   for example extended support contract or only specific projects have been worked on
+For(Name="For_SystemIdList",IteratorProperty="SystemId",TableID="SupportSystemIdList",TableColumn="SystemId")
+Message(Message="Creating information products for system: ${SystemId}")
+#
+# Cumulate reset varies by system:
+# - reset the description to not be so ugly
+SetPropertyFromTable(TableID="SystemInfo",Column="YearStart",ColumnIncludeFilters="SystemId:${SystemId}",PropertyName="YearStart")
+SetProperty(PropertyName="SupportStart",PropertyType="String",PropertyValue="2020-${YearStart}")
+SetProperty(PropertyName="SupportEnd",PropertyType="DateTime",PropertyValue="CurrentToDay")
+Cumulate(TSList="AllMatchingTSID",TSID="${SystemId}*",Reset="${YearStart}")
+SetTimeSeriesProperty(TSList="AllMatchingTSID",TSID="${SystemId}.TriLynx.SupportHours.Day",Description="%L Support Hours")
+# Set properties for the system that are used in output products:
+# - set Y axis maximum to be above the support hours cap so that the horizontal line is always shown
+SetDebugLevel(LogFileLevel="2")
+SetPropertyFromTable(TableID="SystemInfo",Column="SupportHoursCap",ColumnIncludeFilters="SystemId:${SystemId}",PropertyName="SupportHoursCap")
+SetPropertyFromTable(TableID="SystemInfo",Column="UpdateHoursCap",ColumnIncludeFilters="SystemId:${SystemId}",PropertyName="AnnualSoftwareUpdatesHoursCap")
+If(Name="If_EmptySupportHoursCap",PropertyIsNotDefinedOrIsEmpty="SupportHoursCap")
+Message(Message="System ${SystemId} has no data for SupportHoursCap",CommandStatus="WARNING")
+EndIf(Name="If_EmptySupportHoursCap")
+If(Name="If_EmptyAnnualSoftwareUpdatesHoursCap",PropertyIsNotDefinedOrIsEmpty="AnnualSoftwareUpdatesHoursCap")
+Message(Message="System ${SystemId} has no data for AnnualSoftwareUpdateHoursCap",CommandStatus="WARNING")
+EndIf(Name="If_EmptyAnnualSoftwareUpdatesHoursCap")
+SetDebugLevel(ScreenLevel="0",LogFileLevel="0")
+Message(Message="System ${SystemId} has SupportHoursCap=${SupportHoursCap} AnnualSoftwareUpdateHoursCap=${AnnualSoftwareUpdatesHoursCap}")
+SetProperty(PropertyName="SupportHoursYAxisMax",PropertyType="Double",PropertyValue="${SupportHoursCap}",Add="10")
+SetProperty(PropertyName="AnnualSoftwareUpdatesHoursYAxisMax",PropertyType="Double",PropertyValue="${AnnualSoftwareUpdatesHoursCap}",Add="10")
+# Create the graph showing cumulative "Support" and "Annual Software Updates":
+# - sometimes errors may result if a system has not had charges yet in a year
+ProcessTSProduct(TSProductFile="timesheet-support-project-graph-template.tsp",View="False",OutputFile="results/${SystemId}-SupportHours.png",VisibleStart="${SupportStart}",VisibleEnd="${SupportEnd}")
+ProcessTSProduct(TSProductFile="timesheet-annual-software-updates-project-graph-template.tsp",View="False",OutputFile="results/${SystemId}-AnnualSoftwareUpdatesHours.png",VisibleStart="${SupportStart}",VisibleEnd="${SupportEnd}")
+#
+# Output a table of "Support" hours including date, employee, hours, and work note:
+# - exclude project since in the leading text
+# - sorting the database strings does not work because in MM/DD/YYYYY format so sort the table
+# - change the precision on hours from the default of 6 digits to 1
+# - use the FormatFile command to insert an introduction before the table
+ReadTableFromDataStore(DataStore="TimesheetsDatabaseMemory",Sql="SELECT Project, DateText AS 'Date', Hours, LastName, FirstName, WorkNotes from ProjectReport WHERE Customer = '${SystemId}' AND Project LIKE '%- Support'",TableID="${SystemId}-SupportProjectData")
+FormatTableDateTime(TableID="${SystemId}-SupportProjectData",InputColumn="Date",DateTimeFormat="%Y-%m-%d",OutputColumn="DateYYYYMMDD",OutputType="String")
+SortTable(TableID="${SystemId}-SupportProjectData",SortColumns="DateYYYYMMDD,LastName",SortOrder="DateYYYYMMDD:Descending,LastName:Ascending")
+SetTableColumnProperties(TableID="${SystemId}-SupportProjectData",IncludeColumns="Hours",Precision="1")
+WriteTableToMarkdown(TableID="${SystemId}-SupportProjectData",OutputFile="results/${SystemId}-SupportHours.md",ExcludeColumns="Project,DateYYYYMMDD")
+FormatFile(InputFile="results/${SystemId}-SupportHours.md",PrependFile="results/support-worknotes-insert.md",ContentType="Text",OutputType="Text",OutputFile="results/${SystemId}-SupportHours.md")
+#
+# Output a table of "Annual Software Updates" hours including date, employee, hours, and work note:
+# - exclude project since in the leading text
+# - sorting the database strings does not work because in MM/DD/YYYYY format so sort the table
+# - change the precision on hours from the default of 6 digits to 1
+# - use the FormatFile command to insert an introduction before the table
+ReadTableFromDataStore(DataStore="TimesheetsDatabaseMemory",Sql="SELECT Project, DateText AS 'Date', Hours, LastName, FirstName, WorkNotes from ProjectReport WHERE Customer = '${SystemId}' AND Project LIKE '%- Annual Software Updates'",TableID="${SystemId}-AnnualSoftwareUpdatesProjectData")
+FormatTableDateTime(TableID="${SystemId}-AnnualSoftwareUpdatesProjectData",InputColumn="Date",DateTimeFormat="%Y-%m-%d",OutputColumn="DateYYYYMMDD",OutputType="String")
+SortTable(TableID="${SystemId}-AnnualSoftwareUpdatesProjectData",SortColumns="DateYYYYMMDD,LastName",SortOrder="DateYYYYMMDD:Descending,LastName:Ascending")
+SetTableColumnProperties(TableID="${SystemId}-AnnualSoftwareUpdatesProjectData",IncludeColumns="Hours",Precision="1")
+WriteTableToMarkdown(TableID="${SystemId}-AnnualSoftwareUpdatesProjectData",OutputFile="results/${SystemId}-AnnualSoftwareUpdatesHours.md",ExcludeColumns="Project,DateYYYYMMDD")
+FormatFile(InputFile="results/${SystemId}-AnnualSoftwareUpdatesHours.md",PrependFile="results/annual-software-updates-worknotes-insert.md",ContentType="Text",OutputType="Text",OutputFile="results/${SystemId}-AnnualSoftwareUpdatesHours.md")
+# End processing systems.
+EndFor(Name="For_SystemIdList")
+#
+# Summarize total hours worked for each person on staff:
+# - should be 8 hours every work day if PTO and holiday is included
+# - TODO smalers 2022-02-14 need to improve, including summarizing project, overhead, and development work
+ReadTableFromDataStore(DataStore="TimesheetsDatabaseMemory",Sql="SELECT * FROM ProjectReport",TableID="ProjectReportData",RowCountProperty="ProjectReportDataCount")
+TableToTimeSeries(TableID="ProjectReportData",DateColumn="DateText",LocationColumn="LastName",ValueColumn="Hours",DataSource="TriLynx",DataType="TotalHours",Interval="Day",Units="Hours",HandleDuplicatesHow="Add",Alias="Employee-%L-TotalHours")
+#
+# End - cleanup:
+# - sort the time series
+SortTimeSeries(TSIDFormat="AliasTSID")
+# - close the SQLite in-memory database
+CloseDataStore(DataStore="TimesheetsDatabaseMemory",StatusMessage="Closed in-memory database at end of workflow.")

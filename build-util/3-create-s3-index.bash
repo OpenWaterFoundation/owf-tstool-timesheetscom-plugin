@@ -62,10 +62,10 @@ createCatalogFile() {
     exit 1
   fi
   # Pull out the installers available for all platforms since the catalog
-  # is used to download to all platforms.
+  # is used to download to all platforms:
   # - search for tar.gz and zip files
   tmpS3CatalogPath="/tmp/${USER}-tstool-timesheetscom-plugin-catalog-ls-installers.txt"
-  # Only list installers that match the current download filename specification
+  # Only list installers that match the current download filename specification.
   cat ${tmpS3ListingPath} | grep -E 'tstool-timesheetscom-plugin.*.zip' > ${tmpS3CatalogPath}
   logInfo "Available TSTool timesheetscom plugin installers:"
   cat ${tmpS3CatalogPath}
@@ -126,12 +126,12 @@ echo '
    }
 </style>
 
-<title>TSTool timesheetscom (timesheets.com) Plugin Downloads</title>
+<title>TSTool TimesheetsCom (timesheets.com) Plugin Downloads</title>
 </head>' >> ${indexHtmlTmpFile}
 
 echo '
 <body>
-<h1>Open Water Foundation TSTool timesheetscom (timesheets.com) Plugin Software Downloads</h1>
+<h1>Open Water Foundation TSTool TimesheetsCom (timesheets.com) Plugin Software Downloads</h1>
 <p>
 The TSTool timesheetscom (timesheets.com) Plugin software is available for Windows.
 The same installer can also be installed on Linux.
@@ -144,7 +144,7 @@ The same installer can also be installed on Linux.
      <li> Use the TSTool <b>View / Datastores</b> menu to check the plugin version.</li>
      <li> Also check the plugin install files in the user'\''s <code>.tstool/NN/plugins</code> folder to check the plugin version.</li>
      </ul></li>
-     <li> See the latest <a href="https://software.openwaterfoundation.org/tstool-timesheetscom-plugin/latest/doc-user/appendix-install/install/">TSTool timesheetscom (timesheets.com) Plugin installation documentation</a>
+     <li> See the latest <a href="https://software.openwaterfoundation.org/tstool-timesheetscom-plugin/latest/doc-user/appendix-install/install/">TSTool TimesheetsCom Plugin installation documentation</a>
      for installation information (or follow a link below for specific version documentation).</li>
 <li>The TSTool timesheetscom Plugin requires that TSTool is also installed if not already installed:
     <ul>
@@ -159,7 +159,7 @@ The same installer can also be installed on Linux.
 <p>The Windows version is the primary development version.</p>
 
 <ol>
-<li> Download a TSTool timesheetscom (timesheets.com) Plugin Windows installer (zip file) from below.</li>
+<li> Download a TSTool TimesheetsCom Plugin Windows installer (zip file) from below.</li>
 <li> Follow the latest <a href="https://software.openwaterfoundation.org/tstool-timesheetscom-plugin/latest/doc-user/appendix-install/install/">installation instructions</a>
 - see also similar documentation for the specific version.</li>
 </ol>' >> ${indexHtmlTmpFile}
@@ -168,7 +168,7 @@ The same installer can also be installed on Linux.
   createIndexHtmlFile_Table win
 
 echo '<h2>Linux Download</h2>
-<p>Linux versions of the TSTool timesheetscom Plugin are not actively developed.
+<p>Linux versions of the TSTool TimesheetsCom Plugin are not actively developed.
 The Windows plugin can be installed on Linux.
 Contact OWF if additional help is needed.</p>
 
@@ -185,11 +185,11 @@ echo '
 
 # Create a table of downloads for an operating system to be used in the index.html file.
 createIndexHtmlFile_Table() {
-  # Operating system is passed in as the required first argument
+  # Operating system is passed in as the required first argument.
   downloadOs=$1
   echo '<table>' >> ${indexHtmlTmpFile}
-  # List the available download files
-  # Listing local files does not show all available files on Amazon but may be useful for testing
+  # List the available download files.
+  # Listing local files does not show all available files on Amazon but may be useful for testing.
   catalogSource="aws"  # "aws" or "local"
   if [ "${catalogSource}" = "aws" ]; then
     # Use AWS list from catalog file for the index.html file download file list, with format like
@@ -203,25 +203,25 @@ createIndexHtmlFile_Table() {
     #   then change back to previous strings for output.
     # The use space as the delimiter and sort on the 3rd token.
     echo '<tr><th>Download File</th><th>Product</th><th>Version</th><th>File Timestamp</th><th>Size (Bytes)</th><th>Operating System</th><th>User Doc</th><th>Dev Doc</th></tr>' >> ${indexHtmlTmpFile}
-    # Version before sort...
+    # Version before sort.
     # cat "${tmpS3CatalogPath}" | grep "${downloadOs}-" | sort -r | awk '
     cat "${tmpS3CatalogPath}" | grep "${downloadOs}-" | awk '{ printf "%s %s %s %s\n", $1, $2, $3, $4 }' | sed -E 's|([0-9][0-9]/)|\1-zzz|g' | sed 's|/-zzz|-zzz|g' | sed 's|dev|-dev|g' | sort -r -k4,4 | sed 's|-zzz||g' | sed 's|-dev|dev|g'  | awk '
       {
-        # Download file is the full line
+        # Download file is the full line.
         downloadFileDate = $1
         downloadFileTime = $2
         downloadFileSize = $3
         downloadFilePath = $4
-        # Split the download file path into parts to get the download file without path
+        # Split the download file path into parts to get the download file without path.
         split(downloadFilePath,downloadFilePathParts,"/")
         # Split the download file into parts to get other information.
         filenameSpecVersion = 1
-        downloadFile=""                   # Only the filename part of the file
-        downloadFileProduct=""            # The product name (e.g., TSTool timesheetscom Plugin)
-        downloadFileOs=""                 # Operating system
-        downloadFileQgisVersion="NA"      # QGIS version
-        docUserUrl=""                     # User documentation URL
-        docDevUrl=""                      # Developer documentation URL
+        downloadFile=""                   # Only the filename part of the file.
+        downloadFileProduct=""            # The product name (e.g., TSTool TimesheetsCom Plugin).
+        downloadFileOs=""                 # Operating system.
+        downloadFileQgisVersion="NA"      # QGIS version.
+        docUserUrl=""                     # User documentation URL.
+        docDevUrl=""                      # Developer documentation URL.
         if ( filenameSpecVersion = 1 ) {
           # Initial filename spec using format:  tstool-timesheetscom-plugin/1.0.0.dev/software/tstool-timesheetscom-plugin-1.0.0.dev-win-2201020304.zip
           downloadFile=downloadFilePathParts[4]
@@ -235,7 +235,7 @@ createIndexHtmlFile_Table() {
         }
         # Set the URL to the download file.
         downloadFileUrl=sprintf("https://software.openwaterfoundation.org/tstool-timesheetscom-plugin/%s/software/%s", downloadFileVersion, downloadFile)
-        product = "TSTool timesheets.com Plugin"
+        product = "TSTool TimesheetsCom Plugin"
         if ( downloadFileOs == "cyg" ) {
           downloadFileOs = "Cygwin"
         }
@@ -246,7 +246,7 @@ createIndexHtmlFile_Table() {
           downloadFileOs = "Windows"
         }
         # Documentation URLs are based on the software version.
-        # Documentation links for development and user documentation are only shown if exist
+        # Documentation links for development and user documentation are only shown if exist:
         # - the file returned by curl is actually the index.html file
         docDevUrl=sprintf("https://software.openwaterfoundation.org/tstool-timesheetscom-plugin/%s/doc-dev",downloadFileVersion)
         docDevCurl=sprintf("curl --insecure --output /dev/null --silent --head --fail \"%s\"",docDevUrl)
