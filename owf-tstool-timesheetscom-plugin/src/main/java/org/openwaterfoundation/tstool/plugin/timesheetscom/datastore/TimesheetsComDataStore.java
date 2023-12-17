@@ -68,6 +68,9 @@ import riverside.datastore.AbstractWebServiceDataStore;
 import riverside.datastore.DataStoreRequirementChecker;
 import riverside.datastore.PluginDataStore;
 
+/**
+ * Datastore for timesheets.com web services.
+ */
 public class TimesheetsComDataStore extends AbstractWebServiceDataStore implements DataStoreRequirementChecker, PluginDataStore {
 
 	/**
@@ -114,6 +117,24 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	 * List of all daily time sheet data records from the above.
 	 */
 	List<ReportProjectCustomizableData> allTimesheetData = new ArrayList<>();
+	
+	/**
+	 * Expiration time at which global data will be refreshed.
+	 */
+	OffsetDateTime globalDataExpirationTime = null;
+
+	/**
+	 * Expiration time offset in seconds:
+	 * - the 'globalDataExpirationTime' will be set this far into the future when global data are read
+	 * - don't use a time that is too short because timesheets.com may restrict access due to high retries
+	 */
+	long globalDataExpirationOffset = 3600;
+
+	/**
+	 * Global location ID list, used to streamline creating lists for UI choices,
+	 * determined when the tscatalogList is read.
+	 */
+	List<String> locIdList = new ArrayList<>();
 
 	/**
 	 * Global server constants.
@@ -129,12 +150,6 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	 * Global user list.
 	 */
 	List<User> userList = new ArrayList<>();
-
-	/**
-	 * Global location ID list, used to streamline creating lists for UI choices,
-	 * determined when the tscatalogList is read.
-	 */
-	List<String> locIdList = new ArrayList<>();
 
 	/**
 	 * Global debug option for datastore, used for development and troubleshooting.
@@ -173,6 +188,20 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	    // - in particular a cache of the TimeSeriesCatalog used for further queries
 
 	    readGlobalData();
+	}
+	
+	/**
+	 * Check global data to evaluate whether it has expired.
+	 * If the global data are expired, read it again.
+	 */
+	public void checkGlobalDataExpiration () {
+		String routine = getClass().getSimpleName() + ".checkGlobalDataExpiration";
+		OffsetDateTime now = OffsetDateTime.now();
+		if ( (this.globalDataExpirationTime != null) && now.isAfter(this.globalDataExpirationTime) ) {
+			// Global data have expired so read it again.
+			Message.printStatus(2, routine, "Global data have expired.  Reading current data.");
+			readGlobalData();
+		}
 	}
 
 	/**
@@ -434,6 +463,22 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     	
     	Collections.sort ( customerNames, String.CASE_INSENSITIVE_ORDER );
     	return customerNames;
+    }
+
+    /**
+     * Get the global data expiration offset in seconds.
+     * @return the global data expiration offset in seconds
+     */
+    public long getGlobalDataExpirationOffset () {
+    	return this.globalDataExpirationOffset;
+    }
+    
+    /**
+     * Get the global data expiration time.
+     * @return the global data expiration time
+     */
+    public OffsetDateTime getGlobalDataExpirationTime () {
+    	return this.globalDataExpirationTime;
     }
 
 	/**
@@ -942,14 +987,14 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		String [] elements = { "data", "items", "Data" };
 		JsonNode jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
 			this.debug, requestUrl, getHttpRequestProperties(), elements );
-		if ( (jsonNode != null) && (jsonNode.size() > 0) ) {
+		if ( jsonNode == null ) {
+			Message.printStatus(2, routine, "  Reading account codes returned null.");
+		}
+		else {
 			Message.printStatus(2, routine, "  Read " + jsonNode.size() + " account codes items.");
 			for ( int i = 0; i < jsonNode.size(); i++ ) {
 				accountCodeList.add((AccountCode)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), AccountCode.class));
 			}
-		}
-		else {
-			Message.printStatus(2, routine, "  Reading account codes returned null.");
 		}
 		return accountCodeList;
 	}
@@ -998,14 +1043,14 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		String [] elements = { "data", "items", "Data" };
 		JsonNode jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
 			this.debug, requestUrl, getHttpRequestProperties(), elements );
-		if ( (jsonNode != null) && (jsonNode.size() > 0) ) {
+		if ( jsonNode == null ) {
+			Message.printStatus(2, routine, "  Reading customers returned null.");
+		}
+		else {
 			Message.printStatus(2, routine, "  Read " + jsonNode.size() + " customer items.");
 			for ( int i = 0; i < jsonNode.size(); i++ ) {
 				accountCodeList.add((Customer)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), Customer.class));
 			}
-		}
-		else {
-			Message.printStatus(2, routine, "  Reading customers returned null.");
 		}
 		return accountCodeList;
 	}
@@ -1023,19 +1068,31 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	public void readGlobalData () {
 		String routine = getClass().getSimpleName() + ".readGlobalData";
 		Message.printWarning ( 2, routine, "Reading global data for datastore \"" + getName() + "\"." );
+		OffsetDateTime now = OffsetDateTime.now();
+		this.globalDataExpirationTime = now.plusSeconds(this.globalDataExpirationOffset);
+		Message.printWarning ( 2, routine, "Global data will expire at: " + this.globalDataExpirationTime );
 
 		// Add to avoid Eclipse warning if 'debug' is not used.
 		if ( debug ) {
 		}
 
-		// Account code.
+		// Account code objects.
 
 		try {
-			this.accountCodeList = readAccountCodes();
-			Message.printStatus(2, routine, "Read " + this.accountCodeList.size() + " account codes." );
-			if ( Message.isDebugOn ) {
-				for ( AccountCode ac : this.accountCodeList ) {
-					Message.printStatus(2, routine, "Account code: " + ac );
+			List<AccountCode> accountCodeList0 = readAccountCodes();
+			if ( (accountCodeList0.size() == 0) && (this.accountCodeList.size() > 0) ) {
+				Message.printStatus(2, routine, "Read 0 account codes." );
+				Message.printStatus(2, routine, "Keeping " + this.accountCodeList.size() + " previously read account code data." );
+				Message.printStatus(2, routine, "May have reached API access limits.  Will try again in " +
+				this.globalDataExpirationOffset + " seconds." );
+			}
+			else {
+				this.accountCodeList = accountCodeList0;
+				Message.printStatus(2, routine, "Read " + this.accountCodeList.size() + " account codes." );
+				if ( Message.isDebugOn ) {
+					for ( AccountCode ac : this.accountCodeList ) {
+						Message.printStatus(2, routine, "Account code: " + ac );
+					}
 				}
 			}
 		}
@@ -1044,15 +1101,24 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 			Message.printWarning(3, routine, e );
 		}
 
-		// Customer.
+		// Customer objects.
 
 		try {
-			this.customerList = readCustomers();
-			Message.printStatus(2, routine, "Read " + this.customerList.size() + " customers." );
-			if ( Message.isDebugOn ) {
-				//for ( AccountCode ac : this.customerList ) {
-				//	Message.printStatus(2, routine, "Account code: " + ac );
-				//}
+			List<Customer> customerList0 = readCustomers();
+			if ( (customerList0.size() == 0) && (this.customerList.size() > 0) ) {
+				Message.printStatus(2, routine, "Read 0 customers." );
+				Message.printStatus(2, routine, "Keeping " + this.customerList.size() + " previously read customer data." );
+				Message.printStatus(2, routine, "May have reached API access limits.  Will try again in " +
+				this.globalDataExpirationOffset + " seconds." );
+			}
+			else {
+				this.customerList = customerList0;
+				Message.printStatus(2, routine, "Read " + this.customerList.size() + " customers." );
+				if ( Message.isDebugOn ) {
+					//for ( Customer customer : this.customerList ) {
+					//	Message.printStatus(2, routine, "Customer: " + customer );
+					//}
+				}
 			}
 		}
 		catch ( Exception e ) {
@@ -1060,15 +1126,24 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 			Message.printWarning(3, routine, e );
 		}
 
-		// Project.
+		// Project objects.
 
 		try {
-			this.projectList = readProjects();
-			Message.printStatus(2, routine, "Read " + this.projectList.size() + " projects." );
-			if ( Message.isDebugOn ) {
-				//for ( AccountCode ac : this.customerList ) {
-				//	Message.printStatus(2, routine, "Account code: " + ac );
-				//}
+			List<Project> projectList0 = readProjects();
+			if ( (projectList0.size() == 0) && (this.projectList.size() > 0) ) {
+				Message.printStatus(2, routine, "Read 0 projects." );
+				Message.printStatus(2, routine, "Keeping " + this.projectList.size() + " previously read project data." );
+				Message.printStatus(2, routine, "May have reached API access limits.  Will try again in " +
+				this.globalDataExpirationOffset + " seconds." );
+			}
+			else {
+				this.projectList = projectList0;
+				Message.printStatus(2, routine, "Read " + this.projectList.size() + " projects." );
+				if ( Message.isDebugOn ) {
+					//for ( Project project : this.projectList ) {
+					//	Message.printStatus(2, routine, "Project: " + project );
+					//}
+				}
 			}
 		}
 		catch ( Exception e ) {
@@ -1076,18 +1151,27 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 			Message.printWarning(3, routine, e );
 		}
 
-		// Customizable project report, will be used in readTimeSeries, but figure out the schema.
+		// Customizable project report, will be used in readTimeSeries.
 
 		try {
-			this.reportProjectCustomizableReportDataList = readReportProjectCustomizable();
-			Message.printStatus(2, routine, "Read report customizable records." );
-			/*
-			if ( Message.isDebugOn ) {
-				for ( AccountCode ac : this.accountCodeList ) {
-					Message.printStatus(2, routine, "Account code: " + ac );
-				}
+			List<ReportProjectCustomizableReportData> reportProjectCustomizableReportDataList0 = readReportProjectCustomizable();
+			if ( (reportProjectCustomizableReportDataList0.size() == 0) && (this.reportProjectCustomizableReportDataList.size() > 0) ) {
+				Message.printStatus(2, routine, "Read 0 report customizable records." );
+				Message.printStatus(2, routine, "Keeping " + this.reportProjectCustomizableReportDataList.size() + " previously read report data." );
+				Message.printStatus(2, routine, "May have reached API access limits.  Will try again in " +
+				this.globalDataExpirationOffset + " seconds." );
 			}
-			*/
+			else {
+				this.reportProjectCustomizableReportDataList = reportProjectCustomizableReportDataList0;
+				Message.printStatus(2, routine, "Read " + this.reportProjectCustomizableReportDataList.size() + " report customizable records." );
+				/*
+				if ( Message.isDebugOn ) {
+					for ( ReportProjectCustomizableReportData data : this.reportProjectCustomizableReportDataList ) {
+						Message.printStatus(2, routine, "Report project customizable report data: " + data );
+					}
+				}
+				*/
+			}
 		}
 		catch ( Exception e ) {
 			Message.printWarning(3, routine, "Error reading report project customizable (" + e + ")");
@@ -1112,15 +1196,24 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 			Message.printWarning(3, routine, e );
 		}
 
-		// User.
+		// User objects.
 
 		try {
-			this.userList = readUsers();
-			Message.printStatus(2, routine, "Read " + this.userList.size() + " users." );
-			if ( Message.isDebugOn ) {
-				//for ( AccountCode ac : this.customerList ) {
-				//	Message.printStatus(2, routine, "Account code: " + ac );
-				//}
+			List<User> userList0 = readUsers();
+			if ( (userList0.size() == 0) && (this.userList.size() > 0) ) {
+				Message.printStatus(2, routine, "Read 0 users." );
+				Message.printStatus(2, routine, "Keeping " + this.userList.size() + " previously read user data." );
+				Message.printStatus(2, routine, "May have reached API access limits.  Will try again in " +
+				this.globalDataExpirationOffset + " seconds." );
+			}
+			else {
+				this.userList = userList0;
+				Message.printStatus(2, routine, "Read " + this.userList.size() + " users." );
+				if ( Message.isDebugOn ) {
+					//for ( User user : this.userList ) {
+					//	Message.printStatus(2, routine, "User: " + user );
+					//}
+				}
 			}
 		}
 		catch ( Exception e ) {
@@ -1350,13 +1443,13 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		String [] elements = null;
 		JsonNode jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
 			this.debug, requestUrl, getHttpRequestProperties(), elements );
-		if ( (jsonNode != null) && (jsonNode.size() > 0) ) {
+		if ( jsonNode == null ) {
+			Message.printStatus(2, routine, "  Reading server constants returned null.");
+		}
+		else {
 			// Will include top level "errors" and "data".
 			//Message.printStatus(2, routine, "  Read " + jsonNode.size() + " server constants.");
 			serverConstantsList.add((ServerConstants)JacksonToolkit.getInstance().treeToValue(jsonNode, ServerConstants.class));
-		}
-		else {
-			Message.printStatus(2, routine, "  Reading server constants returned null.");
 		}
 		return serverConstantsList;
 	}
@@ -1394,6 +1487,9 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
      */
     public TS readTimeSeries ( String tsidReq, DateTime readStart, DateTime readEnd,
     	boolean readData, HashMap<String,Object> readProperties ) throws Exception {
+    	// Check whether the global data have expired and reread if necessary.
+    	checkGlobalDataExpiration();
+    	
     	//String routine = getClass().getSimpleName() + ".readTimeSeries";
 
     	// Get the properties of interest.
@@ -1467,7 +1563,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     		// - first get the matching data records
    			List<ReportProjectCustomizableData> dataList = readTimeSeries_GetData ( tscatalog, this.allTimesheetData );
    			if ( dataList.size() > 0 ) {
-   				// Set the original dates to what is avaiable in the full dataset.
+   				// Set the original dates to what is available in the full dataset.
    				ts.setDate1Original(dataList.get(0).getWorkDateTime());
    				ts.setDate2Original(dataList.get(dataList.size() - 1).getWorkDateTime());
 
@@ -1556,6 +1652,8 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	 */
 	public List<TimeSeriesCatalog> readTimeSeriesCatalog ( String tsidReq, String dataTypeReq, String dataIntervalReq, InputFilter_JPanel ifp ) {
 		//String routine = getClass().getSimpleName() + ".readTimeSeriesCatalog";
+    	// Check whether the global data have expired and reread if necessary.
+    	checkGlobalDataExpiration();
 
 		// Indicate whether the data type should be matched.
 		boolean doDataTypeReq = false;
@@ -1697,14 +1795,14 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		String [] elements = { "data", "users", "Data" };
 		JsonNode jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
 			this.debug, requestUrl, getHttpRequestProperties(), elements );
-		if ( (jsonNode != null) && (jsonNode.size() > 0) ) {
+		if ( jsonNode == null ) {
+			Message.printStatus(2, routine, "  Reading user returned null.");
+		}
+		else {
 			Message.printStatus(2, routine, "  Read " + jsonNode.size() + " user items.");
 			for ( int i = 0; i < jsonNode.size(); i++ ) {
 				userList.add((User)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), User.class));
 			}
-		}
-		else {
-			Message.printStatus(2, routine, "  Reading user returned null.");
 		}
 		return userList;
 	}
