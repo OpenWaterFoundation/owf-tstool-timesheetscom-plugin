@@ -10,7 +10,7 @@ This plugin allows [`timesheets.com`](https://timesheets.com) time series to be 
 This documentation has been updated for:
 
 *   TSTool version 14.9.1
-*   TSTool TimesheetsCom plugin version 1.0.0
+*   TSTool TimesheetsCom plugin version 1.0.1
 
 ----------------
 

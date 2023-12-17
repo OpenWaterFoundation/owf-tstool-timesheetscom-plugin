@@ -125,17 +125,20 @@ The following are other specifications related to TSTool plugin integration with
 2. **Data Caching:**
     1.  TSTool performance, in particular interactive features, is impacted by web service query times.
         Therefore, it is desirable to cache data in memory so that software does not need to requery web services.
-        The trade-off is that when data are cached, changes in the `timesheets.com` database will not be visible in the TSTool
+        The API also has query limits and frequent queries will result in API cutoff.
+        When data are cached, changes in the `timesheets.com` database will not be visible in the TSTool
         session unless TSTool rereads the data.
         There is a balance between performance and having access to the most recent data.
     2.  Currently, TSTool caches all data by reading the data at startup
         because the full list of time series can only be determined by examining all the data records.
-        Restart TSTool to reread the data.
+        TSTool will also automatically refresh cached data when a request is made an hour or more after the
+        previous request.
+        If necessary, restart TSTool to read the current data.
     3.  Additional optimization of caching may be implemented in future releases.
 3.  **Account and other codes:**
     1.  Currently the default is to read all timesheet records regardless of the account code,
         billable code, review status, etc.
-    2.  The datastore configuration file and [`../../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md]
+    2.  The datastore configuration file and [`ReadTimesheetsCom`](../../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md)
         command may be enhanced in the future to provide more control.
 
 ## Limitations ##
@@ -143,11 +146,20 @@ The following are other specifications related to TSTool plugin integration with
 The following limitations and design issues have been identified during development of the TimesheetsCom plugin.
 Additional software development is required to overcome these limitations.
 
-1.  **Hourly data:**
+1.  **General:**
+    1.  **Data Caching:**
+        In order to determine a unique list of customers/projects/users,
+        it is necessary to process all of the report data records.
+        To ensure fast performance, the data are cached after reading.
+        The API has access limits and caching the data helps avoid API cutoffs.
+        As a compromise, the report data are cached for an hour.
+        Subsequent operations will cause the data to be reread, which will cause a slight delay.
+        If it is necessary to retrieve current data, restart TSTool.
+    2.  **Error handling:**
+        1.  The `timesheets.com` web services return error messages and will be interpreted in more detail
+            as experience with the API is gained.
+2.  **Hourly data:**
     1.  Hourly data are not currently supported but are expected to be supported in a future release.
-2.  **Error handling:**
-    1.  The `timesheets.com` web services return error messages and will be interpreted in more detail
-        as experience with the API is gained.
 
 ## Datastore Configuration File ##
 
