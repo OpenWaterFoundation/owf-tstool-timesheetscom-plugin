@@ -63,16 +63,16 @@ public class AccountCode {
 	private String accountCodeStatus = "";
 
 	/**
-	 * "CREATEDATE"
+	 * "CREATEDDATE"
 	 */
-	@JsonProperty("CREATEDATE")
-	private String createDate = "";
+	@JsonProperty("CREATEDDATE")
+	private String createdDate = "";
 	
 	/**
-	 * "CREATEUSERID"
+	 * "CREATORUSERID"
 	 */
-	@JsonProperty("CREATEUSERID")
-	private String createUserId = "";
+	@JsonProperty("CREATORUSERID")
+	private String creatorUserId = "";
 	
 	/**
 	 * "CREATORNAME"
@@ -151,19 +151,19 @@ public class AccountCode {
 	}
 
 	/**
-	 * Return the create date.
-	 * @return the create date
+	 * Return the created date.
+	 * @return the created date
 	 */
-	public String getCreateDate () {
-		return this.createDate;
+	public String getCreatedDate () {
+		return this.createdDate;
 	}
 	
 	/**
-	 * Return the create user ID.
-	 * @return the create user ID
+	 * Return the creator user ID.
+	 * @return the creator user ID
 	 */
-	public String getCreateUserId () {
-		return this.createUserId;
+	public String getCreatorUserId () {
+		return this.creatorUserId;
 	}
 	
 	/**

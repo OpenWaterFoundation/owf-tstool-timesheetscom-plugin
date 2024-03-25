@@ -22,6 +22,9 @@ NoticeEnd */
 
 package org.openwaterfoundation.tstool.plugin.timesheetscom.dao;
 
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -99,6 +102,12 @@ public class Customer {
 	private String customerId = "";
 	
 	/**
+	 * Customer identifier as an integer.
+	 */
+	@JsonIgnore
+	private int customerIdAsInteger = -1;
+	
+	/**
 	 * "CUSTOMERSTATUS"
 	 */
 	@JsonProperty("CUSTOMERSTATUS")
@@ -111,10 +120,10 @@ public class Customer {
 	private String companyId = "";
 	
 	/**
-	 * "CREATEDATE"
+	 * "CREATEDDATE"
 	 */
-	@JsonProperty("CREATEDATE")
-	private String creaateDate = "";
+	@JsonProperty("CREATEDDATE")
+	private String createdDate = "";
 	
 	/**
 	 * "CREATORUSERID"
@@ -163,13 +172,165 @@ public class Customer {
 	 */
 	public Customer () {
 	}
-	
+
+	/**
+	 * Clean the data (e.g., convert strings to other types).
+	 * This should be called after reading data using the API.
+	 */
+	public void cleanData () {
+		this.customerIdAsInteger = Integer.valueOf(this.customerId);
+	}
+
+	/**
+	 * Return address1
+	 * @return address1
+	 */
+	public String getAddress1 () {
+		return this.address1;
+	}
+
+	/**
+	 * Return address2
+	 * @return address2
+	 */
+	public String getAddress2 () {
+		return this.address2;
+	}
+
+	/**
+	 * Return businessFax
+	 * @return businessFax
+	 */
+	public String getBusinessFax () {
+		return this.businessFax;
+	}
+
+	/**
+	 * Return businessPhone
+	 * @return businessPhone
+	 */
+	public String getBusinessPhone () {
+		return this.businessPhone;
+	}
+
+	/**
+	 * Return city
+	 * @return city
+	 */
+	public String getCity () {
+		return this.city;
+	}
+
+	/**
+	 * Return comments
+	 * @return comments
+	 */
+	public String getComments () {
+		return this.comments;
+	}
+
+	/**
+	 * Return companyId
+	 * @return companyId
+	 */
+	public String getCompanyId () {
+		return this.companyId;
+	}
+
+	/**
+	 * Return contactEmail
+	 * @return contactEmail
+	 */
+	public String getContactEmail () {
+		return this.contactEmail;
+	}
+
+	/**
+	 * Return contactName
+	 * @return contactName
+	 */
+	public String getContactName () {
+		return this.contactName;
+	}
+
+	/**
+	 * Return contactPhone
+	 * @return contactPhone
+	 */
+	public String getContactPhone () {
+		return this.contactPhone;
+	}
+
+	/**
+	 * Return the created date.
+	 * @return the created date 
+	 */
+	public String getCreatedDate () {
+		return this.createdDate;
+	}
+
 	/**
 	 * Return the creator name.
 	 * @return the creator name 
 	 */
 	public String getCreatorName () {
 		return this.creatorName;
+	}
+
+	/**
+	 * Return the creator user ID.
+	 * @return the creator user ID 
+	 */
+	public String getCreatorUserId () {
+		return this.creatorUserId;
+	}
+
+	/**
+	 * Return the customer ID.
+	 * @return the customer ID 
+	 */
+	public String getCustomerId () {
+		return this.customerId;
+	}
+	
+	/**
+	 * Return the customer ID as an integer.
+	 * @return the customer ID as an integer 
+	 */
+	public int getCustomerIdAsInteger () {
+		return this.customerIdAsInteger;
+	}
+	
+	/**
+	 * Return the customer name.
+	 * @return the customer name 
+	 */
+	public String getCustomerName () {
+		return this.customerName;
+	}
+	
+	/**
+	 * Return the customer name plain.
+	 * @return the customer name plain
+	 */
+	public String getCustomerNamePlain () {
+		return this.customerNamePlain;
+	}
+	
+	/**
+	 * Return the customer number.
+	 * @return the customer number 
+	 */
+	public String getCustomerNumber () {
+		return this.customerNumber;
+	}
+	
+	/**
+	 * Return the customer status.
+	 * @return the customer status 
+	 */
+	public String getCustomerStatus () {
+		return this.customerStatus;
 	}
 	
 	/**
@@ -178,6 +339,45 @@ public class Customer {
 	 */
 	public String getReadOnly () {
 		return this.readOnly;
+	}
+
+	/**
+	 * Return state.
+	 * @return state
+	 */
+	public String getState () {
+		return this.state;
+	}
+	
+	/**
+	 * Return zip.
+	 * @return zip
+	 */
+	public String getZip () {
+		return this.zip;
+	}
+
+	/**
+ 	* Lookup a customer given its identifier.
+ 	* @param customerList list of Customer to search
+ 	* @param id customer ID to match
+ 	* @return matching customer or null if not found
+ 	*/
+	public static Customer lookupCustomerForCustomerId ( List<Customer> customerList, int id ) {
+		if ( customerList == null ) {
+			return null;
+		}
+		if ( id < 0 ) {
+			return null;
+		}
+		for ( Customer customer : customerList ) {
+			int customerId = customer.getCustomerIdAsInteger();
+			if ( (customerId > 0) && (customerId == id) ) {
+				return customer;
+			}
+		}
+		// Not found.
+		return null;
 	}
 	
 }

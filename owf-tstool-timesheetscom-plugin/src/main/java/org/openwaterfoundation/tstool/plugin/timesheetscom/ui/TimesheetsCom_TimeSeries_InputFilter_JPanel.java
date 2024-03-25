@@ -165,6 +165,14 @@ public class TimesheetsCom_TimeSeries_InputFilter_JPanel extends InputFilter_JPa
 	    	}
 
 	    }
+	    
+	    // Project status choices:
+	    // - these do not match the tscatlog data and have to be handled specifically
+	    
+	    List<String> projectStatusChoices = new ArrayList<>();
+	    projectStatusChoices.add ( "Active" );
+	    projectStatusChoices.add ( "Archived" );
+	    projectStatusChoices.add ( "All" );
 
 	    // Sort the choices.
 	    Collections.sort(customerNameChoices,String.CASE_INSENSITIVE_ORDER);
@@ -179,6 +187,14 @@ public class TimesheetsCom_TimeSeries_InputFilter_JPanel extends InputFilter_JPa
 	    filters.add(new InputFilter("Project - Name",
             "projectName", "projectName", "projectName",
             StringUtil.TYPE_STRING, projectNameChoices, projectNameChoices, true));
+
+	    InputFilter filter = new InputFilter("Project - Status",
+            "projectStatus", "projectStatus", "projectStatus",
+            StringUtil.TYPE_STRING, projectStatusChoices, projectStatusChoices, true);
+	    filter.removeConstraint(InputFilter.INPUT_STARTS_WITH);
+	    filter.removeConstraint(InputFilter.INPUT_ENDS_WITH);
+	    filter.removeConstraint(InputFilter.INPUT_CONTAINS);
+	    filters.add(filter);
 
 	    filters.add(new InputFilter("User - First Name",
             "userFirstName", "userFirstName", "userFirstName",

@@ -22,10 +22,10 @@ public class ReportProjectCustomizableDataComparator implements Comparator<Repor
 	 * @param dataB the second ReportProjectCustomizableData to compare
 	 */
 	public int compare ( ReportProjectCustomizableData dataA, ReportProjectCustomizableData dataB ) {
-		if ( dataA.getWorkDateTime().lessThan(dataB.getWorkDateTime()) ) {
+		if ( dataA.getWorkDateAsDateTime().lessThan(dataB.getWorkDateAsDateTime()) ) {
 			return -1;
 		}
-		else if ( dataA.getWorkDateTime().greaterThan(dataB.getWorkDateTime()) ) {
+		else if ( dataA.getWorkDateAsDateTime().greaterThan(dataB.getWorkDateAsDateTime()) ) {
 			return 1;
 		}
 		else {
