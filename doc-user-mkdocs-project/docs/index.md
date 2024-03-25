@@ -1,7 +1,7 @@
 # OWF / TSTool TimesheetsCom Plugin #
 
 This is the user documentation for the Open Water Foundation TSTool TimesheetsCom (`timesheets.com`) web services plugin.
-This plugin allows [`timesheets.com`](https://timesheets.com) time series to be listed and read.
+This plugin allows timesheet data from [`timesheets.com`](https://timesheets.com) to be listed and read as time series.
 
 *   [Acknowledgements](#acknowledgements)
 *   [How to Use this Documentation](#how-to-use-this-documentation)
@@ -9,8 +9,8 @@ This plugin allows [`timesheets.com`](https://timesheets.com) time series to be 
 
 This documentation has been updated for:
 
-*   TSTool version 14.9.1
-*   TSTool TimesheetsCom plugin version 1.0.1
+*   TSTool version 14.9.3
+*   TSTool TimesheetsCom plugin version 1.1.0
 
 ----------------
 
