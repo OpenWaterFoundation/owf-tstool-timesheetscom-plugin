@@ -44,6 +44,7 @@ and data arrays containing data values and flags.
 To convert `timesheets.com` data to time series requires joining customer name, project name, and user last and first name
 to create unique time series identifiers.
 The project hours are then summed in the time series to provide a history of work activities by customer, project, and user (employee).
+Only time series combinations with hourly data values greater than zero result in a time series that is shown in TSTool.
 
 The TSTool main interface browsing tool displays joined information in the time series list to select time series.
 The ***Data type*** and ***Time step*** are general filters implemented for all datastores and the
@@ -95,6 +96,7 @@ The meaning of the TSID parts is as follows:
 *   The `Interval` is set to:
     +   `Day` always.
     +   Aggregation to week and month interval may be added in the future.
+        Use other TSTool commands to process data as needed.
 *   The `DatastoreName` is taken from the datastore configuration file `Name` property:
     +   The datastore name is listed in the TSTool main interface.
     +   Multiple datastores can be configured, each pointing to a different `timesheets.com` account.
@@ -125,7 +127,9 @@ The following are other specifications related to TSTool plugin integration with
 2. **Data Caching:**
     1.  TSTool performance, in particular interactive features, is impacted by web service query times.
         Therefore, it is desirable to cache data in memory so that software does not need to requery web services.
-        The API also has query limits and frequent queries will result in API cutoff.
+        The API also has query limits and too many queries in a short time will result in HTTP 420 errors and API cutoff.
+        To minimize issues, the plugin will retry queries after a dynamic wait period (increased until no 420 error)
+        and this may result in a temporary delay and there is a maximum wait to prevent the software from hanging indefinitely.
         When data are cached, changes in the `timesheets.com` database will not be visible in the TSTool
         session unless TSTool rereads the data.
         There is a balance between performance and having access to the most recent data.
@@ -151,13 +155,18 @@ Additional software development is required to overcome these limitations.
         In order to determine a unique list of customers/projects/users,
         it is necessary to process all of the report data records.
         To ensure fast performance, the data are cached after reading.
-        The API has access limits and caching the data helps avoid API cutoffs.
+        The API has access limits and caching the data helps avoid API cutoffs
+        that might occur if many requests occurred in a short time,
+        such as reading times series individually with corresponding web service requests.
         As a compromise, the report data are cached for an hour.
         Subsequent operations will cause the data to be reread, which will cause a slight delay.
         If it is necessary to retrieve current data, restart TSTool.
     2.  **Error handling:**
         1.  The `timesheets.com` web services return error messages and will be interpreted in more detail
             as experience with the API is gained.
+        2.  If there is an error reading cached data at startup and after the expiration time, the
+            [`ReadTimesheetsCom`](../../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command
+            will show a warning.
 2.  **Hourly data:**
     1.  Hourly data are not currently supported but are expected to be supported in a future release.
 
@@ -199,6 +208,9 @@ ServiceRootURI = "https://secure05v.timesheets.com/api/public/v1"
 ServiceApiDocumentationUri = "https://support2.timesheets.com/knowledge-base/documentation/"
 ApiKey = "INSERT KEY"
 Authorization = "INSERT AUTHORIZATION"
+# Known maximum daily limit (default is one year):
+# - specify to increase the size of data read to increase performance
+RequestDayLimit = 2500
 ```
 
 **<p style="text-align: center;">
@@ -220,6 +232,7 @@ TimesheetsCom Web Services DataStore Configuration File Properties
 | `Description`<br>**required** | Description of the datastore, typically a short sentence, used in some displays. | None - must be specified. |
 | `Enabled` | Indicates whether the datastore is enabled. | `True` |
 | `Name`<br>**required** | Datastore name that is used in the TSTool software and TimesheetsCom plugin commands.  The name should be unique across all datastores. | None - must be specified. |
+| `RequestDayLimit` | The `timesheets.com` account limit for the number of days that can be requested in an API call.  The default is typically one year but can be increased by contacting `timesheets.com`.  A larger limit allows more data to be requested and avoid HTTP 420 errors, which require spacing out calls and slowing down the software. Currently the value cannot be determined from the API. | The plugin assumes one year based on website warnings when a larger period is requested. |
 | `ServiceApiDocumentationURI` | The URL for the web services API documentation, specific to the system.  This is used by software to display system-specific documentation. | Documentation will not be available from command editors. |
 | `ServiceRootURI`<br>**required** | The root URL for the web services.  This should include everything except the service name and query parameters (the specific service name and query parameters are automatically specified by software to query data). | None - must be specified. |
 | `Type`<br>**required** | Must be `TimesheetsComDataStore`, which is used by TSTool to identify which plugin software to use for the datastore. | None - must be specified. |

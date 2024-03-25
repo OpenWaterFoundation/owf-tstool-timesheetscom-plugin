@@ -22,6 +22,8 @@ NoticeEnd */
 
 package org.openwaterfoundation.tstool.plugin.timesheetscom.dao;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,7 +31,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import RTi.Util.Time.DateTime;
 
 /**
- * timesheets.com "report/project/customizable" object ReportData object, which includes a list of reports.
+ * timesheets.com "report/project/customizable" object ReportData object,
+ * which includes a list of reports as ReportProjectCustomizableRecord.
  */
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class ReportProjectCustomizableReportData {
@@ -49,13 +52,13 @@ public class ReportProjectCustomizableReportData {
 	private ReportProjectCustomizableRecord record = null;
 	
 	/**
-	 * Start date for the query.
+	 * Start date for the query, not currently used for anything.
 	 */
 	@JsonIgnore
 	DateTime startDate = null;
 	
 	/**
-	 * Start date for the query.
+	 * End date for the query, not currently used for anything.
 	 */
 	@JsonIgnore
 	DateTime endDate = null;
@@ -71,12 +74,13 @@ public class ReportProjectCustomizableReportData {
 	 * This should be called after reading from the API.
 	 */
 	public void cleanData () {
+		// The report will include one record.
 		this.record.cleanData();
 	}
 
 	/**
 	 * Return the ReportProjectCustomizable record.
-	 * #return the ReportProjectCustomizable record
+	 * @return the ReportProjectCustomizable record
 	 */
 	public ReportProjectCustomizableRecord getReportProjectCustomizableRecord () {
 		return this.record;
@@ -98,9 +102,22 @@ public class ReportProjectCustomizableReportData {
 
 	/**
 	 * Return the number of records in the report.
-	 * #return the number of records in the report
+	 * @return the number of records in the report
 	 */
 	public int size () {
 		return record.size();
 	}
+
+	/**
+	 * Return the total number of records in a list of reports.
+	 * @return the number of records in the report
+	 */
+	public static int size ( List<ReportProjectCustomizableReportData> reportProjectCustomizableReportDataList ) {
+		int size = 0;
+		for ( ReportProjectCustomizableReportData data : reportProjectCustomizableReportDataList ) {
+			size += data.size();
+		}
+		return size;
+	}
+
 }

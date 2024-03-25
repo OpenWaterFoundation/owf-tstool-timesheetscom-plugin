@@ -47,6 +47,7 @@ import org.openwaterfoundation.tstool.plugin.timesheetscom.dao.User;
 import org.openwaterfoundation.tstool.plugin.timesheetscom.ui.TimesheetsCom_TimeSeries_CellRenderer;
 import org.openwaterfoundation.tstool.plugin.timesheetscom.ui.TimesheetsCom_TimeSeries_InputFilter_JPanel;
 import org.openwaterfoundation.tstool.plugin.timesheetscom.ui.TimesheetsCom_TimeSeries_TableModel;
+import org.openwaterfoundation.tstool.plugin.timesheetscom.dto.HttpCodeException;
 import org.openwaterfoundation.tstool.plugin.timesheetscom.dto.JacksonToolkit;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -63,6 +64,9 @@ import RTi.Util.IO.RequirementCheck;
 import RTi.Util.Message.Message;
 import RTi.Util.String.MultiKeyStringDictionary;
 import RTi.Util.String.StringUtil;
+import RTi.Util.Table.DataTable;
+import RTi.Util.Table.TableField;
+import RTi.Util.Table.TableRecord;
 import RTi.Util.Time.DateTime;
 import riverside.datastore.AbstractWebServiceDataStore;
 import riverside.datastore.DataStoreRequirementChecker;
@@ -135,6 +139,12 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	 * determined when the tscatalogList is read.
 	 */
 	List<String> locIdList = new ArrayList<>();
+	
+	/**
+	 * Global data read problems:
+	 * - if not empty, this should be set as an error in the ReadTimesheetsCom command to indicate incomplete data
+	 */
+	List<String> globalDataProblems = new ArrayList<>();
 
 	/**
 	 * Global server constants.
@@ -342,9 +352,12 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		// has been added.
 		Message.printStatus(2, routine, "Processing " + dataList.size() + " time series records into time series catalog.");
 		for ( ReportProjectCustomizableData data : dataList ) {
-			if ( TimeSeriesCatalog.findForData ( this.tscatalogList, data ) == null ) {
-				// Time series was not found so add it.
-				this.tscatalogList.add ( new TimeSeriesCatalog ( data ) );
+			if ( data.getHoursAsFloat() > .001 ) {
+				// Don't include zero hours because some project hours may have been zeroed out to correct issues.
+				if ( TimeSeriesCatalog.findForData ( this.tscatalogList, data ) == null ) {
+					// Time series was not found so add it.
+					this.tscatalogList.add ( new TimeSeriesCatalog ( data, Project.findForProjectId(this.projectList, data.getProjectId()) ) );
+				}
 			}
 		}
 		Message.printStatus(2, routine, "Created " + this.tscatalogList.size() + " time series catalog.");
@@ -372,6 +385,34 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		List<TimeSeriesCatalog> tsmetaList = readTimeSeriesMeta ( dataType, timeStep, ifp );
 		return getTimeSeriesListTableModel(tsmetaList);
 	}
+
+	/**
+ 	* Create a work table with standard columns.
+ 	* @param workTableID identifier for the table to be created
+ 	* @return new table with standard columns
+ 	*/
+	public DataTable createWorkTable ( String workTableID ) {
+    	DataTable table = new DataTable();
+    	table.setTableID ( workTableID );
+    	// Currently columns are hand-coded so don't need to handle dynamically.
+    	//int workTableDateColumn =
+    			table.addField(new TableField(TableField.DATA_TYPE_DATETIME, "Date", -1, -1), null);
+    	//int workUserColumn =
+    			table.addField(new TableField(TableField.DATA_TYPE_STRING, "Person", -1, -1), null);
+    	//int workHoursColumn =
+    			table.addField(new TableField(TableField.DATA_TYPE_FLOAT, "Hours", -1, 1), null);
+    	//int workDescriptionColumn =
+    			table.addField(new TableField(TableField.DATA_TYPE_STRING, "Description", -1, -1), null);
+    	return table;
+	}
+
+    /**
+     * Get the global list of account codes.
+     * @return the global list of account codes
+     */
+    public List<AccountCode> getAccountCodeCache () {
+    	return this.accountCodeList;
+    }
 
 	// TODO smalers 2023-11-18 maybe create this list up front as global data.
 	/**
@@ -417,6 +458,14 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 			return (String)prop;
 		}
 	}
+
+    /**
+     * Get the global list of cached customers.
+     * @return the global list of cached customers 
+     */
+    public List<Customer> getCustomerCache () {
+    	return this.customerList;
+    }
 
 	/**
 	 * Get the unique customer names for the specified data type and interval.
@@ -481,6 +530,86 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     	return this.globalDataExpirationTime;
     }
 
+    /**
+     * Get the global data problems.
+     * @return the global data problems list
+     */
+    public List<String> getGlobalDataProblems () {
+    	return this.globalDataProblems;
+    }
+
+	/**
+	 * Get the HTTP request properties (HTTP headers).
+	 * This must be added to all HTTP requests.
+	 */
+	public MultiKeyStringDictionary getHttpRequestProperties () {
+		MultiKeyStringDictionary requestProperties = new MultiKeyStringDictionary();
+		requestProperties.add("apikey", getApiKey());
+		requestProperties.add("x-ts-authorization", getAuthorization());
+		requestProperties.add("accept", "application/json" );
+		return requestProperties;
+	}
+
+	/**
+	 * Get the list of location identifier strings used in the UI.
+	 * The list is determined from the cached list of time series catalog.
+	 * @param dataType to match, or * or null to return all, should be a value of stationparameter_no
+	 * @return a unique sorted list of the location identifiers (station_no)
+	 */
+	public List<String> getLocIdStrings ( String dataType ) {
+		if ( (dataType == null) || dataType.isEmpty() || dataType.equals("*") ) {
+			// Return the cached list of all locations.
+			return this.locIdList;
+		}
+		else {
+			// Get the list of locations from the cached list of time series catalog
+			List<String> locIdList = new ArrayList<>();
+			boolean found = false;
+			for ( TimeSeriesCatalog tscatalog : this.tscatalogList ) {
+
+				if ( !tscatalog.getDataType().equals(dataType) ) {
+					// Requested data type does not match.
+					continue;
+				}
+
+				found = false;
+				for ( String locId2 : locIdList ) {
+					if ( locId2.equals(tscatalog.getLocId()) ) {
+						found = true;
+						break;
+					}
+				}
+				if ( !found ) {
+					locIdList.add(tscatalog.getLocId());
+				}
+			}
+			Collections.sort(locIdList, String.CASE_INSENSITIVE_ORDER);
+			return locIdList;
+		}
+	}
+
+	/**
+ 	* Get the properties for the plugin.
+ 	* A copy of the properties map is returned so that calling code cannot change the properties for the plugin.
+ 	* @return plugin properties map.
+ 	*/
+	public Map<String,Object> getPluginProperties () {
+		Map<String,Object> pluginProperties = new LinkedHashMap<>();
+		// For now the properties are all strings so it is easy to copy.
+    	for (Map.Entry<String, Object> entry : this.pluginProperties.entrySet()) {
+        	pluginProperties.put(entry.getKey(), entry.getValue());
+    	}
+		return pluginProperties;
+	}
+
+    /**
+     * Get the global list of cached projects.
+     * @return the global list of cached projects 
+     */
+    public List<Project> getProjectCache () {
+    	return this.projectList;
+    }
+
 	/**
 	 * Get the unique project names for the specified data type, interval, and customer name.
 	 * @param dataType the data type to match, can be null, empty, or "*"
@@ -538,6 +667,15 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     	
     	Collections.sort ( projectNames, String.CASE_INSENSITIVE_ORDER );
     	return projectNames;
+    }
+    
+    /**
+     * Get the cached ReportProjectCustomizableData.
+     * This is a list of reports, which each have data records.
+     * @return the cached ReportProjectCustomizableData.
+     */
+    public List<ReportProjectCustomizableReportData> getReportProjectCustomizableDataCache () {
+    	return this.reportProjectCustomizableReportDataList;
     }
 
 	/**
@@ -693,67 +831,17 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     }
 
 	/**
-	 * Get the HTTP request properties (HTTP headers).
-	 * This must be added to all HTTP requests.
+	 * Return the maximum number of days in a request.
+	 * @return the maximum number of days in a request
 	 */
-	public MultiKeyStringDictionary getHttpRequestProperties () {
-		MultiKeyStringDictionary requestProperties = new MultiKeyStringDictionary();
-		requestProperties.add("apikey", getApiKey());
-		requestProperties.add("x-ts-authorization", getAuthorization());
-		requestProperties.add("accept", "application/json" );
-		return requestProperties;
-	}
-
-	/**
-	 * Get the list of location identifier strings used in the UI.
-	 * The list is determined from the cached list of time series catalog.
-	 * @param dataType to match, or * or null to return all, should be a value of stationparameter_no
-	 * @return a unique sorted list of the location identifiers (station_no)
-	 */
-	public List<String> getLocIdStrings ( String dataType ) {
-		if ( (dataType == null) || dataType.isEmpty() || dataType.equals("*") ) {
-			// Return the cached list of all locations.
-			return this.locIdList;
+	public int getRequestDayLimit () {
+		Object prop = getProperties().getValue("RequestDayLimit");
+		if ( prop == null ) {
+			return 366;
 		}
 		else {
-			// Get the list of locations from the cached list of time series catalog
-			List<String> locIdList = new ArrayList<>();
-			boolean found = false;
-			for ( TimeSeriesCatalog tscatalog : this.tscatalogList ) {
-
-				if ( !tscatalog.getDataType().equals(dataType) ) {
-					// Requested data type does not match.
-					continue;
-				}
-
-				found = false;
-				for ( String locId2 : locIdList ) {
-					if ( locId2.equals(tscatalog.getLocId()) ) {
-						found = true;
-						break;
-					}
-				}
-				if ( !found ) {
-					locIdList.add(tscatalog.getLocId());
-				}
-			}
-			Collections.sort(locIdList, String.CASE_INSENSITIVE_ORDER);
-			return locIdList;
+			return Integer.valueOf((String)prop);
 		}
-	}
-
-	/**
- 	* Get the properties for the plugin.
- 	* A copy of the properties map is returned so that calling code cannot change the properties for the plugin.
- 	* @return plugin properties map.
- 	*/
-	public Map<String,Object> getPluginProperties () {
-		Map<String,Object> pluginProperties = new LinkedHashMap<>();
-		// For now the properties are all strings so it is easy to copy.
-    	for (Map.Entry<String, Object> entry : this.pluginProperties.entrySet()) {
-        	pluginProperties.put(entry.getKey(), entry.getValue());
-    	}
-		return pluginProperties;
 	}
 
 	/**
@@ -941,6 +1029,56 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	public JWorksheet_AbstractRowTableModel getTimeSeriesListTableModel(List<? extends Object> data) {
     	return new TimesheetsCom_TimeSeries_TableModel(this,(List<TimeSeriesCatalog>)data);
     }
+    
+    /**
+     * Get the global list of cached users.
+     * @return the global list of cached users
+     */
+    public List<User> getUserCache () {
+    	return this.userList;
+    }
+
+    /**
+     * Determine if a project is active.
+     * @param projectIdNumber project identifier number
+     * @return true if the project status is active, false otherwise
+     */
+    public boolean projectIsActive ( int projectIdNumber ) {
+    	for ( Project project : this.projectList ) {
+    		if ( project.getProjectIdAsInteger() == projectIdNumber ) {
+    			// Found the matching project.
+    			if ( project.getProjectStatusAsInteger() == 1 ) {
+    				// Project is active.
+    				return true;
+    			}
+    			else {
+    				return false;
+    			}
+    		}
+    	}
+    	return false;
+    }
+
+    /**
+     * Determine if a project is archived.
+     * @param projectIdNumber project identifier number
+     * @return true if the project status is archive, false otherwise
+     */
+    public boolean projectIsArchived ( int projectIdNumber ) {
+    	for ( Project project : this.projectList ) {
+    		if ( project.getProjectIdAsInteger() == projectIdNumber ) {
+    			// Found the matching project.
+    			if ( project.getProjectStatusAsInteger() == 0 ) {
+    				// Project is archived.
+    				return true;
+    			}
+    			else {
+    				return false;
+    			}
+    		}
+    	}
+    	return false;
+    }
 
 	/**
 	 * Indicate whether the datastore provides a time series input filter.
@@ -985,15 +1123,59 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		//String arrayName = "maxrows";
 		//String arrayName = "data";
 		String [] elements = { "data", "items", "Data" };
-		JsonNode jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
-			this.debug, requestUrl, getHttpRequestProperties(), elements );
-		if ( jsonNode == null ) {
-			Message.printStatus(2, routine, "  Reading account codes returned null.");
-		}
-		else {
-			Message.printStatus(2, routine, "  Read " + jsonNode.size() + " account codes items.");
-			for ( int i = 0; i < jsonNode.size(); i++ ) {
-				accountCodeList.add((AccountCode)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), AccountCode.class));
+
+		// If the HTTP request returns 420, need to wait and try again.
+		int wait = 0;
+		int waitMax = 600000;
+		JsonNode jsonNode = null;
+		while ( true ) {
+			try {
+				jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
+					this.debug, requestUrl, getHttpRequestProperties(), elements );
+			}
+			catch ( HttpCodeException e ) {
+				Message.printStatus(2, routine, "HTTP code " + e.getCode() + " was returned indicating need to space out requests.");
+				if ( e.getCode() == 420 ) {
+					// The request is being made too fast so build in a wait.
+					if ( wait == 0 ) {
+						// Milliseconds:
+						// - start with 1/2 second
+						wait = 500;
+					}
+					else {
+						// Double the wait.
+						wait = (int)(wait * 2);
+					}
+					if ( wait > waitMax ) {
+						// Have gone past the maximum wait.  Throw an exception rather than waiting a long time.
+						String message = "HTTP code 420 wait retry is > limit " + waitMax + " ms - can't read account codes data.";
+						Message.printWarning(3, routine, message);
+						throw new IOException ( message );
+					}
+					// Wait the number of seconds.
+					Message.printStatus(2, routine, "HTTP code 420 returned.  Waiting " + wait + " ms and then retrying the request.");
+					try {
+						Thread.sleep(wait);
+					}
+					catch ( InterruptedException e2 ) {
+						// Should not occur.
+					}
+					// Go to the top of the loop and try to read again.
+					continue;
+				}
+			}
+			if ( jsonNode == null ) {
+				Message.printStatus(2, routine, "  Reading account codes returned null.");
+				// Break out of the read loop.
+				break;
+			}
+			else {
+				Message.printStatus(2, routine, "  Read " + jsonNode.size() + " account codes items.");
+				for ( int i = 0; i < jsonNode.size(); i++ ) {
+					accountCodeList.add((AccountCode)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), AccountCode.class));
+				}
+				// Break out of the read loop.
+				break;
 			}
 		}
 		return accountCodeList;
@@ -1037,22 +1219,74 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
  	*/
 	private List<Customer> readCustomers() throws IOException {
 		String routine = getClass().getSimpleName() + ".readCustomers";
-		String requestUrl = getServiceRootURI() + COMMON_REQUEST_PARAMETERS + "/items/customer";
+		StringBuilder requestUrl = new StringBuilder(getServiceRootURI() + COMMON_REQUEST_PARAMETERS + "/items/customer");
+		// Get active and archived customers.
+		requestUrl.append("?Status=CUSTOMERSTATUS_ACTIVE,CUSTOMERSTATUS_ARCHIVED");
+		// Get all rows.
+		requestUrl.append("&MaxRows=1000");
 		Message.printStatus(2, routine, "Reading customers from: " + requestUrl);
-		List<Customer> accountCodeList = new ArrayList<>();
+		List<Customer> customerList = new ArrayList<>();
 		String [] elements = { "data", "items", "Data" };
-		JsonNode jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
-			this.debug, requestUrl, getHttpRequestProperties(), elements );
-		if ( jsonNode == null ) {
-			Message.printStatus(2, routine, "  Reading customers returned null.");
-		}
-		else {
-			Message.printStatus(2, routine, "  Read " + jsonNode.size() + " customer items.");
-			for ( int i = 0; i < jsonNode.size(); i++ ) {
-				accountCodeList.add((Customer)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), Customer.class));
+
+		// If the HTTP request returns 420, need to wait and try again.
+		int wait = 0;
+		int waitMax = 600000;
+		JsonNode jsonNode = null;
+		while ( true ) {
+			try {
+				jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
+					this.debug, requestUrl.toString(), getHttpRequestProperties(), elements );
+			}
+			catch ( HttpCodeException e ) {
+				Message.printStatus(2, routine, "HTTP code " + e.getCode() + " was returned indicating need to space out requests.");
+				if ( e.getCode() == 420 ) {
+					// The request is being made too fast so build in a wait.
+					if ( wait == 0 ) {
+						// Milliseconds:
+						// - start with 1/2 second
+						wait = 500;
+					}
+					else {
+						// Double the wait.
+						wait = (int)(wait * 2);
+					}
+					if ( wait > waitMax ) {
+						// Have gone past the maximum wait.  Throw an exception rather than waiting a long time.
+						String message = "HTTP code 420 wait retry is > limit " + waitMax + " ms - can't read customer data.";
+						Message.printWarning(3, routine, message);
+						throw new IOException ( message );
+					}
+					// Wait the number of seconds.
+					Message.printStatus(2, routine, "HTTP code 420 returned.  Waiting " + wait + " ms and then retrying the request.");
+					try {
+						Thread.sleep(wait);
+					}
+					catch ( InterruptedException e2 ) {
+						// Should not occur.
+					}
+					// Go to the top of the loop and try to read again.
+					continue;
+				}
+			}
+			if ( jsonNode == null ) {
+				Message.printStatus(2, routine, "  Reading customers returned null.");
+				// Break out of the read loop.
+				break;
+			}
+			else {
+				Message.printStatus(2, routine, "  Read " + jsonNode.size() + " customer items.");
+				for ( int i = 0; i < jsonNode.size(); i++ ) {
+					Customer customer = (Customer)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), Customer.class);
+					// Clean the data:
+					// - convert strings to other types
+					customer.cleanData();
+					customerList.add(customer);
+				}
+				// Break out of the read loop.
+				break;
 			}
 		}
-		return accountCodeList;
+		return customerList;
 	}
 
 	/**
@@ -1074,6 +1308,29 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 
 		// Add to avoid Eclipse warning if 'debug' is not used.
 		if ( debug ) {
+		}
+
+		// Clear the global data problems.
+		this.globalDataProblems.clear();
+
+		// Server constants:
+		// - read first because may be used for later logic
+
+		try {
+			List<ServerConstants> serverConstantsList = readServerConstants();
+			if ( serverConstantsList.size() == 1 ) {
+				this.serverConstants = serverConstantsList.get(0).getServerConstants();
+				Message.printStatus(2, routine, "Read " + this.serverConstants.size() + " server constants." );
+			}
+			else {
+				Message.printWarning(3, routine, "Error reading global server constants (read " +
+					serverConstantsList.size() + " 'data' objects.");
+			}
+		}
+		catch ( Exception e ) {
+			Message.printWarning(3, routine, "Error reading global server constants (" + e + ")");
+			Message.printWarning(3, routine, e );
+			this.globalDataProblems.add("Error reading global server constants data.");
 		}
 
 		// Account code objects.
@@ -1099,6 +1356,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		catch ( Exception e ) {
 			Message.printWarning(3, routine, "Error reading global account codes (" + e + ")");
 			Message.printWarning(3, routine, e );
+			this.globalDataProblems.add("Error reading global account codes data.");
 		}
 
 		// Customer objects.
@@ -1124,6 +1382,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		catch ( Exception e ) {
 			Message.printWarning(3, routine, "Error reading global customers (" + e + ")");
 			Message.printWarning(3, routine, e );
+			this.globalDataProblems.add("Error reading global customers data.");
 		}
 
 		// Project objects.
@@ -1149,54 +1408,11 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		catch ( Exception e ) {
 			Message.printWarning(3, routine, "Error reading global projects (" + e + ")");
 			Message.printWarning(3, routine, e );
+			this.globalDataProblems.add("Error reading global projects data.");
 		}
 
-		// Customizable project report, will be used in readTimeSeries.
-
-		try {
-			List<ReportProjectCustomizableReportData> reportProjectCustomizableReportDataList0 = readReportProjectCustomizable();
-			if ( (reportProjectCustomizableReportDataList0.size() == 0) && (this.reportProjectCustomizableReportDataList.size() > 0) ) {
-				Message.printStatus(2, routine, "Read 0 report customizable records." );
-				Message.printStatus(2, routine, "Keeping " + this.reportProjectCustomizableReportDataList.size() + " previously read report data." );
-				Message.printStatus(2, routine, "May have reached API access limits.  Will try again in " +
-				this.globalDataExpirationOffset + " seconds." );
-			}
-			else {
-				this.reportProjectCustomizableReportDataList = reportProjectCustomizableReportDataList0;
-				Message.printStatus(2, routine, "Read " + this.reportProjectCustomizableReportDataList.size() + " report customizable records." );
-				/*
-				if ( Message.isDebugOn ) {
-					for ( ReportProjectCustomizableReportData data : this.reportProjectCustomizableReportDataList ) {
-						Message.printStatus(2, routine, "Report project customizable report data: " + data );
-					}
-				}
-				*/
-			}
-		}
-		catch ( Exception e ) {
-			Message.printWarning(3, routine, "Error reading report project customizable (" + e + ")");
-			Message.printWarning(3, routine, e );
-		}
-
-		// Server constants.
-
-		try {
-			List<ServerConstants> serverConstantsList = readServerConstants();
-			if ( serverConstantsList.size() == 1 ) {
-				this.serverConstants = serverConstantsList.get(0).getServerConstants();
-				Message.printStatus(2, routine, "Read " + this.serverConstants.size() + " server constants." );
-			}
-			else {
-				Message.printWarning(3, routine, "Error reading global server constants (read " +
-					serverConstantsList.size() + " 'data' objects.");
-			}
-		}
-		catch ( Exception e ) {
-			Message.printWarning(3, routine, "Error reading global server constants (" + e + ")");
-			Message.printWarning(3, routine, e );
-		}
-
-		// User objects.
+		// User objects:
+		// - this handles HTTP 420
 
 		try {
 			List<User> userList0 = readUsers();
@@ -1219,6 +1435,39 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		catch ( Exception e ) {
 			Message.printWarning(3, routine, "Error reading global users (" + e + ")");
 			Message.printWarning(3, routine, e );
+			this.globalDataProblems.add("Error reading global user data.");
+		}
+
+		// Customizable project report:
+		// - put at the end because often triggers HTTP 420 error that requires wait
+		// - will be used in readTimeSeries
+
+		try {
+			List<ReportProjectCustomizableReportData> reportProjectCustomizableReportDataList0 = readReportProjectCustomizable();
+			if ( (reportProjectCustomizableReportDataList0.size() == 0) && (this.reportProjectCustomizableReportDataList.size() > 0) ) {
+				Message.printStatus(2, routine, "Read 0 report customizable records." );
+				Message.printStatus(2, routine, "Keeping " + this.reportProjectCustomizableReportDataList.size() + " previously read report data." );
+				Message.printStatus(2, routine, "May have reached API access limits.  Will try again in " +
+				this.globalDataExpirationOffset + " seconds." );
+			}
+			else {
+				this.reportProjectCustomizableReportDataList = reportProjectCustomizableReportDataList0;
+				Message.printStatus(2, routine, "Read " + this.reportProjectCustomizableReportDataList.size()
+					+ " report customizable records with a total of "
+					+ ReportProjectCustomizableReportData.size(this.reportProjectCustomizableReportDataList) + " hourly project records." );
+				/*
+				if ( Message.isDebugOn ) {
+					for ( ReportProjectCustomizableReportData data : this.reportProjectCustomizableReportDataList ) {
+						Message.printStatus(2, routine, "Report project customizable report data: " + data );
+					}
+				}
+				*/
+			}
+		}
+		catch ( Exception e ) {
+			Message.printWarning(3, routine, "Error reading report project customizable (" + e + ")");
+			Message.printWarning(3, routine, e );
+			this.globalDataProblems.add("Error reading global report project customizable data.");
 		}
 
 		// The time series catalog is created by examining all timesheet records because there is no other
@@ -1269,26 +1518,84 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
  	*/
 	private List<Project> readProjects() throws IOException {
 		String routine = getClass().getSimpleName() + ".readProjects";
-		String requestUrl = getServiceRootURI() + COMMON_REQUEST_PARAMETERS + "/items/project";
+		StringBuilder requestUrl = new StringBuilder ( getServiceRootURI() + COMMON_REQUEST_PARAMETERS + "/items/project" );
+		// Get active and archived projects (default is archived).
+		requestUrl.append ( "?Status=PROJECTSTATUS_ACTIVE,PROJECTSTATUS_ARCHIVED");
+		// Get all the projects (default is 50).
+		requestUrl.append ( "&MaxRows=1000");
 		Message.printStatus(2, routine, "Reading projects from: " + requestUrl);
-		List<Project> accountCodeList = new ArrayList<>();
+		List<Project> projectList = new ArrayList<>();
 		String [] elements = { "data", "items", "Data" };
-		JsonNode jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
-			this.debug, requestUrl, getHttpRequestProperties(), elements );
-		if ( (jsonNode != null) && (jsonNode.size() > 0) ) {
-			Message.printStatus(2, routine, "  Read " + jsonNode.size() + " project items.");
-			for ( int i = 0; i < jsonNode.size(); i++ ) {
-				accountCodeList.add((Project)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), Project.class));
+		boolean debug = this.debug;
+		// Set debug = true to output the JSON to the log file.
+		//boolean debug = true;
+
+		// If the HTTP request returns 420, need to wait and try again.
+		int wait = 0;
+		int waitMax = 600000;
+		JsonNode jsonNode = null;
+		while ( true ) {
+			try {
+				jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
+					debug, requestUrl.toString(), getHttpRequestProperties(), elements );
+			}
+			catch ( HttpCodeException e ) {
+				Message.printStatus(2, routine, "HTTP code " + e.getCode() + " was returned indicating need to space out requests.");
+				if ( e.getCode() == 420 ) {
+					// The request is being made too fast so build in a wait.
+					if ( wait == 0 ) {
+						// Milliseconds:
+						// - start with 1/2 second
+						wait = 500;
+					}
+					else {
+						// Double the wait.
+						wait = (int)(wait * 2);
+					}
+					if ( wait > waitMax ) {
+						// Have gone past the maximum wait.  Throw an exception rather than waiting a long time.
+						String message = "HTTP code 420 wait retry is > limit " + waitMax + " ms - can't read project data.";
+						Message.printWarning(3, routine, message);
+						throw new IOException ( message );
+					}
+					// Wait the number of seconds.
+					Message.printStatus(2, routine, "HTTP code 420 returned.  Waiting " + wait + " ms and then retrying the request.");
+					try {
+						Thread.sleep(wait);
+					}
+					catch ( InterruptedException e2 ) {
+						// Should not occur.
+					}
+					// Go to the top of the loop and try to read again.
+					continue;
+				}
+			}
+			if ( (jsonNode != null) && (jsonNode.size() > 0) ) {
+				Message.printStatus(2, routine, "  Read " + jsonNode.size() + " project items.");
+				for ( int i = 0; i < jsonNode.size(); i++ ) {
+					projectList.add((Project)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), Project.class));
+				}
+				// Clean the data:
+				// - convert strings to other types
+				for ( Project project : projectList ) {
+					project.cleanData();
+				}
+				// Break out of the read loop.
+				break;
+			}
+			else {
+				Message.printStatus(2, routine, "  Reading projects returned null.");
+				// Break out of the read loop.
+				break;
 			}
 		}
-		else {
-			Message.printStatus(2, routine, "  Reading projects returned null.");
-		}
-		return accountCodeList;
+		return projectList;
 	}
 
 	/**
- 	* Read the report/project/customizable objects.  Results look like:
+ 	* Read the report/project/customizable objects.
+ 	* The full period back to January 1, 2015 is read.
+ 	* Results look like:
  	*  {
   "errors" : [ ],
   "processing" : {
@@ -1337,84 +1644,155 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		List<ReportProjectCustomizableReportData> reportDataList = new ArrayList<>();
 
 		OffsetDateTime now = OffsetDateTime.now();
-		int year = 0;
+		// End year for the request.
+		int endYear = 0;
+		// Increment for the year, based on the datastore RequestDayLimit property, set by timesheets.com.
+		int yearIncrement = getRequestDayLimit()/366;
+		if ( yearIncrement*366 > getRequestDayLimit() ) {
+			// Make sure roundoff does not cause the increment to be longer than the number of days allowed.
+			--yearIncrement;
+		}
+		Message.printStatus(2, routine, "Year increment for reading customizable report data = " + yearIncrement +
+			" (based on RequestDayLimit datastore property).");
+		int yearMin = 2015;
 		int ndataYear = 0;
 		// Used to break out of the year read loop.
 		boolean haveData = true;
 		boolean firstYear = true;
+		// Milliseconds to wait between requests, needed because the service complains if too many requests occur too close together.
+		int wait = 0;
+		// Maximum milliseconds to wait so that the software does not hang:
+		// - 10 minutes, but hopefully will never be that high
+		int waitMax = 600000;
 		while ( true ) {
 			// Loop backward in time by calendar year:
-			// - API only allows reading one year?
+			// - the API only allows reading one year;
+			//   although it could be extended, use one year queries for general use
 			// - break when there are no records returned
+			// - if queries occur too fast, the server will return a 420 error so build in a wait if that occurs
 			String requestUrl = getServiceRootURI() + COMMON_REQUEST_PARAMETERS + "/report/project/customizable";
 			String startDate = null;
 			String endDate = null;
 			if ( firstYear ) {
-				year = now.getYear();
+				endYear = now.getYear();
 				firstYear = false;
 			}
 			else {
-				// Decrement the year.
-				--year;
+				// Decrement the year by the increment.
+				endYear -= yearIncrement;
+			}
+			if ( endYear < yearMin ) {
+				// Break to make sure not an infinite loop.
+				Message.printStatus(2, routine, "  Trying to read before minimum year " + endYear + " - end reading customizable reports.");
+				break;
 			}
 			ndataYear = 0;
-			startDate = String.format("%04d-01-01", year );
-			endDate = String.format("%04d-12-31", year );
+			// Add one year since processing complete years.
+			startDate = String.format("%04d-01-01", endYear - yearIncrement + 1);
+			DateTime startDate_DateTime = DateTime.parse(startDate);
+			endDate = String.format("%04d-12-31", endYear );
+			DateTime endDate_DateTime = DateTime.parse(endDate);
 			Message.printStatus(2, routine, "Reading /report/project/customizable for " + startDate + " to " + endDate );
 			requestUrl +=
 				// Period.
 				"?StartDate=" + startDate +
 				"&EndDate=" + endDate +
 				// All other parameters, alphabetized.
+				// All account codes.
 				"&AllAccountCodes=1" +
+				// All customers.
 				"&AllCustomers=1" +
+				// All employees.
 				"&AllEmployees=1" +
+				// Includes all active projects:
+				// - seems to include archived projects also
 				"&AllProjects=1" +
 				// For now, don't rely on the approved status.
 				"&Approved=RECORD_UNAPPROVED,RECORD_APPROVED" +
 				// Not sure that this matters but helpful when reviewing raw data.
 				"&GroupType=Project" +
+				// Include the work description by default.
 				"&IncludeWorkDescription=1" +
-				"&ReportType=Detailed" +
-				// For now, don't rely on the signed status.
-				"&Signed=RECORD_UNSIGNED,RECORD_SIGNED" +
 				// For now, don't rely on the billable status.
 				"&ProjectRecordBillableStatus=RECORD_BILLABLE,RECORD_UNBILLABLE" +
 				// All records, including archived.
-				"&ProjectRecordStatus=PROJECTRECORDSTATUS_ALL";
+				"&ProjectRecordStatus=PROJECTRECORDSTATUS_ALL" +
+				"&ReportType=Detailed" +
+				// For now, don't rely on the signed status.
+				"&Signed=RECORD_UNSIGNED,RECORD_SIGNED";
 			Message.printStatus(2, routine, "Reading report project customizable from: " + requestUrl);
 			String [] elements = { "report", "ReportData" };
-			JsonNode jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
-				this.debug, requestUrl, getHttpRequestProperties(), elements );
+			JsonNode jsonNode = null;
+			try {
+				jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
+					this.debug, requestUrl, getHttpRequestProperties(), elements );
+			}
+			catch ( HttpCodeException e ) {
+				Message.printStatus(2, routine, "HTTP code " + e.getCode() + " was returned indicating need to space out requests.");
+				if ( e.getCode() == 420 ) {
+					// The request is being made too fast so build in a wait.
+					if ( wait == 0 ) {
+						// Milliseconds:
+						// - start with 30 seconds based on some testing, but unable to totally nail down
+						wait = 30000;
+					}
+					else  {
+						// Increase the wait by 20%.
+						wait = (int)(wait * 1.2);
+					}
+					if ( wait > waitMax ) {
+						// Have gone past the maximum wait.  Throw an exception rather than waiting a long time.
+						String message = "HTTP code 420 wait retry is > limit " + waitMax + " ms - can't read all project customizable data.";
+						Message.printWarning(3, routine, message);
+						throw new IOException ( message );
+					}
+					// Wait the number of seconds.
+					Message.printStatus(2, routine, "HTTP code 420 returned.  Waiting " + wait + " ms and then retrying the request.");
+					try {
+						Thread.sleep(wait);
+					}
+					catch ( InterruptedException e2 ) {
+						// Should not occur.
+					}
+					// Increment the year since going backwards and go to the top of the loop again.
+					endYear = endYear + yearIncrement;
+					continue;
+				}
+			}
 			if ( (jsonNode != null) && (jsonNode.size() > 0) ) {
-				Message.printStatus(2, routine, "  Read " + jsonNode.size() + " ReportData objects for " + year + ".");
+				Message.printStatus(2, routine, "  Read " + jsonNode.size() + " ReportData objects for " + startDate + " to " + endDate + ".");
 				ndataYear = 0;
 				for ( int i = 0; i < jsonNode.size(); i++ ) {
 					ReportProjectCustomizableReportData reportData =
 						(ReportProjectCustomizableReportData)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), ReportProjectCustomizableReportData.class);
 					int ndata = reportData.getReportProjectCustomizableRecord().getReportProjectCustomizableDataList().size();
-					Message.printStatus(2, routine, "    Read " + ndata + " individual timesheet Data objects for " + year + ".");
+					Message.printStatus(2, routine, "    Read " + ndata + " individual timesheet Data objects for " + startDate + " to " + endDate + ".");
 					if ( ndata == 0 ) {
-						// No data records in the year.
+						// No data records in the year:
+						// - assume no more data
 						haveData = false;
+						Message.printStatus(2, routine, "    No data for " + startDate + " to " + endDate + " so assuming the end of data.");
 						break;
 					}
 					ndataYear += ndata;
-					reportData.setStartDate ( DateTime.parse(startDate) );
-					reportData.setEndDate ( DateTime.parse(endDate) );
+					// Start and end are for information and troubleshooting.
+					reportData.setStartDate ( startDate_DateTime );
+					reportData.setEndDate ( endDate_DateTime );
+					// Clean the data, including converting strings to other data types.
 					reportData.cleanData();
+					// Add the report data to the full data list.
 					reportDataList.add(reportData);
 				}
-				Message.printStatus(2, routine, "    Read " + ndataYear + " total timesheet Data objects for " + year + ".");
+				Message.printStatus(2, routine, "    Read " + ndataYear + " total timesheet Data objects for " + startDate + " to " + endDate + ".");
 				if ( !haveData ) {
-					// Break out of the outside loop.
-					break;
+					// Break out of the outside loop:
+					// - may have no data due to not reading archived data
+					//break;
 				}
 			}
 			else {
-				Message.printStatus(2, routine, "  Reading report project customizable returned null or zero objects.");
-				// Break to make sure not an infinite loop.
-				break;
+				Message.printStatus(2, routine, "  Reading report project customizable for " + startDate + " to " + endDate + " returned null or zero objects.");
+				// May have a complete year with no data so continue looping until the minimum year.
 			}
 		}
 		return reportDataList;
@@ -1441,15 +1819,63 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		List<ServerConstants> serverConstantsList = new ArrayList<>();
 		// Constants are in the top-level "data" array.
 		String [] elements = null;
-		JsonNode jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
-			this.debug, requestUrl, getHttpRequestProperties(), elements );
-		if ( jsonNode == null ) {
-			Message.printStatus(2, routine, "  Reading server constants returned null.");
-		}
-		else {
-			// Will include top level "errors" and "data".
-			//Message.printStatus(2, routine, "  Read " + jsonNode.size() + " server constants.");
-			serverConstantsList.add((ServerConstants)JacksonToolkit.getInstance().treeToValue(jsonNode, ServerConstants.class));
+
+		// If the HTTP request returns 420, need to wait and try again.
+		int wait = 0;
+		int waitMax = 600000;
+		JsonNode jsonNode = null;
+		while ( true ) {
+			try {
+				jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
+					this.debug, requestUrl, getHttpRequestProperties(), elements );
+			}
+			catch ( HttpCodeException e ) {
+				Message.printStatus(2, routine, "HTTP code " + e.getCode() + " was returned indicating need to space out requests.");
+				if ( e.getCode() == 420 ) {
+					// The request is being made too fast so build in a wait.
+					if ( wait == 0 ) {
+						// Milliseconds:
+						// - start with 1/2 second
+						wait = 500;
+					}
+					else {
+						// Double the wait.
+						wait = (int)(wait * 2);
+					}
+					if ( wait > waitMax ) {
+						// Have gone past the maximum wait.  Throw an exception rather than waiting a long time.
+						String message = "HTTP code 420 wait retry is > limit " + waitMax + " ms - can't read server constants data.";
+						Message.printWarning(3, routine, message);
+						throw new IOException ( message );
+					}
+					// Wait the number of seconds.
+					Message.printStatus(2, routine, "HTTP code 420 returned.  Waiting " + wait + " ms and then retrying the request.");
+					try {
+						Thread.sleep(wait);
+					}
+					catch ( InterruptedException e2 ) {
+						// Should not occur.
+					}
+					// Go to the top of the loop and try to read again.
+					continue;
+				}
+			}
+			if ( jsonNode == null ) {
+				Message.printStatus(2, routine, "  Reading server constants returned null.");
+				// Break out of the read loop.
+				break;
+			}
+			else {
+				// Will include top level "errors" and "data".
+				//Message.printStatus(2, routine, "  Read " + jsonNode.size() + " server constants.");
+				serverConstantsList.add((ServerConstants)JacksonToolkit.getInstance().treeToValue(jsonNode, ServerConstants.class));
+				Map<String,Object> constants = serverConstantsList.get(0).getServerConstants();
+				for ( Map.Entry<String, Object> entry : constants.entrySet() ) {
+					Message.printStatus(2, routine, "Server constant " + entry.getKey() + " = " + entry.getValue() );
+				}
+				// Break out of the read loop.
+				break;
+			}
 		}
 		return serverConstantsList;
 	}
@@ -1464,7 +1890,9 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     public TS readTimeSeries ( String tsid, DateTime readStart, DateTime readEnd, boolean readData ) {
     	String routine = getClass().getSimpleName() + ".readTimeSeries";
     	try {
-    		return readTimeSeries ( tsid, readStart, readEnd, readData, null );
+    		HashMap<String,Object> props = null;
+    		DataTable workTable = null;
+    		return readTimeSeries ( tsid, readStart, readEnd, readData, props, workTable );
     	}
     	catch ( Exception e ) {
     		// Throw a RuntimeException since the method interface does not include an exception type.
@@ -1481,21 +1909,66 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
      * @param readEnd end of read, will be set to 'periodEnd' service parameter.
      * @param readProperties additional properties to control the query:
      * <ul>
-     * <li> "Debug" - if true, turn on debug for the query</li>
+     * <li> "Debug" - if Boolean true, turn on debug for the query</li>
+     * <li> "Hours" - if "Archived" only include archived data, if "New", only include new (unarchived) data, default is include all data</li>
+     * <li> "DataFlag" - if "Archived" set the data flag to ARCHIVED, if "Archived0", only set if 0, if "Archived1", only set if 1.</li>
+     * <li> "ProjectStatus" - "Active" (default), "Archived", or "All" - NOT ENABLED
      * </ul>
+     * @param workTable if null, table to set work notes
      * @return the time series or null if not read
      */
     public TS readTimeSeries ( String tsidReq, DateTime readStart, DateTime readEnd,
-    	boolean readData, HashMap<String,Object> readProperties ) throws Exception {
+    	boolean readData, HashMap<String,Object> readProperties, DataTable workTable ) throws Exception {
     	// Check whether the global data have expired and reread if necessary.
     	checkGlobalDataExpiration();
     	
     	//String routine = getClass().getSimpleName() + ".readTimeSeries";
 
     	// Get the properties of interest.
+    	
+    	// Whether to include new and/or archived data.
     	if ( readProperties == null ) {
     		// Create an empty hashmap if necessary to avoid checking for null below.
     		readProperties = new HashMap<>();
+    	}
+    	boolean doArchived = true;
+    	boolean doNew = true;
+    	Object propValueO = readProperties.get("IncludeHours" );
+    	if ( propValueO != null )  {
+    		String propValue = (String)propValueO;
+    		if ( propValue.equalsIgnoreCase("Archived") ) {
+    			doArchived = true;
+    			doNew = false;
+    		}
+    		else if ( propValue.equalsIgnoreCase("New") ) {
+    			doArchived = false;
+    			doNew = true;
+    		}
+    	}
+
+    	// Whether to set the data flag to the archived flag.
+    	boolean doFlagArchived = false;
+    	boolean doFlagArchived0 = false;
+    	boolean doFlagArchived1 = false;
+    	propValueO = readProperties.get("DataFlag" );
+    	if ( propValueO != null )  {
+    		String propValue = (String)propValueO;
+    		if ( propValue.equalsIgnoreCase("Archived") ) {
+    			doFlagArchived = true;
+    		}
+    		else if ( propValue.equalsIgnoreCase("Archived0") ) {
+    			doFlagArchived0 = true;
+    		}
+    		else if ( propValue.equalsIgnoreCase("Archived1") ) {
+    			doFlagArchived1 = true;
+    		}
+    	}
+
+    	// Find the matching TimeSeriesCatalog.
+
+    	TimeSeriesCatalog tscatalog = TimeSeriesCatalog.findForTSID ( this.tscatalogList, tsidReq );
+    	if ( tscatalog == null ) {
+    		throw new Exception ("Unable to find TSID=\"" + tsidReq + "\" in the time series catalog.");
     	}
 
     	TS ts = null;
@@ -1540,13 +2013,6 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     		ts.setDate2(readEnd);
     	}
 
-    	// Find the matching TimeSeriesCatalog.
-
-    	TimeSeriesCatalog tscatalog = TimeSeriesCatalog.findForTSID ( this.tscatalogList, tsidReq );
-    	if ( tscatalog == null ) {
-    		throw new Exception ("Unable to find TSID=\"" + tsidReq + "\" in the time series catalog.");
-    	}
-
     	// Set standard properties:
     	// - use station name for the description because the station parameter name seems to be terse
 		ts.setDescription( tscatalog.getProjectName() );
@@ -1564,15 +2030,15 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
    			List<ReportProjectCustomizableData> dataList = readTimeSeries_GetData ( tscatalog, this.allTimesheetData );
    			if ( dataList.size() > 0 ) {
    				// Set the original dates to what is available in the full dataset.
-   				ts.setDate1Original(dataList.get(0).getWorkDateTime());
-   				ts.setDate2Original(dataList.get(dataList.size() - 1).getWorkDateTime());
+   				ts.setDate1Original(dataList.get(0).getWorkDateAsDateTime());
+   				ts.setDate2Original(dataList.get(dataList.size() - 1).getWorkDateAsDateTime());
 
    				// Set the start and end if not specified above.
    				if ( readStart == null ) {
-   					ts.setDate1(dataList.get(0).getWorkDateTime());
+   					ts.setDate1(dataList.get(0).getWorkDateAsDateTime());
    				}
    				if ( readEnd == null ) {
-   					ts.setDate2(dataList.get(dataList.size() - 1).getWorkDateTime());
+   					ts.setDate2(dataList.get(dataList.size() - 1).getWorkDateAsDateTime());
    				}
 
     			// Allocate the time series data array.
@@ -1580,7 +2046,10 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 
    				// Transfer the TimeSeriesValue list to the TS data.
 
-   				readTimeSeries_TransferData ( ts, dataList );
+   				readTimeSeries_TransferData ( ts, dataList,
+   					doArchived, doNew,
+   					doFlagArchived, doFlagArchived0, doFlagArchived1,
+   					workTable );
    				//Message.printStatus(2,routine, "Transferring " + timeSeriesValueList.size() + " time series values.");
    			}
     	}
@@ -1621,22 +2090,121 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 
     /**
      * Transfer the timesheet records to time series.
+     * Only non-zero hours are transferred.
      * @param ts time series to be filled
      * @param dataList list of timesheet data records
+     * @param doArchived if true, include archived hours in the output, otherwise don't include
+     * @param doNew if true, include new hours in the output, otherwise don't include
+     * @param doFlagArchived set the data flag to the ARCHIVED value
+     * @param doFlagArchived0 set the data flag to the ARCHIVED value, if 0
+     * @param doFlagArchived1 set the data flag to the ARCHIVED value, if 1
+     * @param workTable data table containing work notes
      */
-   	private void readTimeSeries_TransferData ( TS ts, List<ReportProjectCustomizableData> dataList ) {
+   	private void readTimeSeries_TransferData (
+   		TS ts, List<ReportProjectCustomizableData> dataList,
+   		boolean doArchived, boolean doNew,
+   		boolean doFlagArchived, boolean doFlagArchived0, boolean doFlagArchived1,
+   		DataTable workTable ) {
+   		// Check whether the time series identifier includes "Unassigned" and if so print a warning to the log file to help track down.
+   		String routine = null;
+   		boolean isUnassigned = false;
+   		if ( ts.getIdentifierString().contains("Unassigned") ) {
+   			isUnassigned = true;
+   			routine = getClass().getSimpleName() + ".readTimeSeries_TransferData";
+   		}
+   		else if ( Message.isDebugOn ) {
+   			routine = getClass().getSimpleName() + ".readTimeSeries_TransferData";
+   		}
+   		String flag = null;
+   		DateTime dt = null;
+   		double value;
+   		String archived = null;
    		for ( ReportProjectCustomizableData data : dataList ) {
    			// First get the existing data value.
-   			DateTime dt = data.getWorkDateTime();
-   			double value = ts.getDataValue(dt);
-   			if ( ts.isDataMissing(value) ) {
+   			flag = null;
+   			dt = data.getWorkDateAsDateTime();
+   			value = ts.getDataValue(dt);
+   			if ( value < .001 ) {
+   				// Treat as zero:
+   				// - don't add to the time series or table below because it is likely a timesheet correction.
+   				continue;
+   			}
+   			
+   			archived = data.getArchived();
+
+   			// Determine whether to include the data.
+   			if ( doArchived && doNew ) {
+   				// All data are included.
+   			}
+   			else if ( doArchived && !archived.equals("1") ) {
+   				// Don't include because not archived.
+   				continue;
+   			}
+   			else if ( doNew && !archived.equals("0") ) {
+   				// Don't include because not new.
+   				continue;
+   			}
+
+   			// Determine the data flag from ARCHIVED:
+   			// - ARCHIVED is 0 or 1
+   			if ( doFlagArchived ) {
+   				flag = archived;
+   			}
+   			else if ( doFlagArchived0 && archived.equals("0") ) {
+   				flag = archived;
+   			}
+   			else if ( doFlagArchived1 && archived.equals("1") ) {
+   				flag = archived;
+   			}
+   			
+   			// Set the data value.
+   			
+   			if ( ts.isDataMissing(ts.getDataValue(dt)) ) {
    				// Current time series value is missing:
    				// - set the value
-   				ts.setDataValue(dt, data.getHoursFloat());
+   				if ( flag == null ) {
+   					ts.setDataValue(dt, data.getHoursAsFloat());
+   				}
+   				else {
+   					ts.setDataValue(dt, data.getHoursAsFloat(), flag, -1);
+   				}
    			}
    			else {
    				// Add to the existing value.
-   				ts.setDataValue(dt, (value + data.getHoursFloat()) );
+   				if ( flag == null ) {
+   					ts.setDataValue(dt, (value + data.getHoursAsFloat()) );
+   				}
+   				else {
+   					ts.setDataValue(dt, (value + data.getHoursAsFloat()), flag, -1 );
+   				}
+   			}
+   			
+   			// Print a warning if unassigned.
+   			if ( isUnassigned ) {
+   				Message.printWarning(3, routine, "Have unassigned data for ts \"" + ts.getIdentifierString() +
+   					"\" date=" + dt + " value=" + data.getHoursAsFloat() );
+   			}
+   			
+   			// If the work table is not null, add a table record:
+   			// - the positions are hard-coded and standard
+   			
+   			if ( workTable != null ) {
+   				try {
+   					TableRecord rec = new TableRecord();
+   					// Can use the original DateTime since it won't be changed.
+   					rec.addFieldValue(dt);
+   					rec.addFieldValue(data.getLastName() + ", " + data.getFirstName() );
+   					rec.addFieldValue(Float.valueOf(data.getHoursAsFloat()));
+   					rec.addFieldValue(data.getWorkDescription());
+					workTable.addRecord(rec);
+   				}
+   				catch ( Exception e ) {
+   					// Should not happen and could generate a lot of output.
+   					if ( Message.isDebugOn ) {
+   						Message.printWarning(3, routine, "Error adding record to work table.");
+   						Message.printWarning(3, routine, e);
+   					}
+   				}
    			}
    		}
    	}
@@ -1707,6 +2275,18 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 				    	}
 				    	else if ( whereLabel.equals("projectName") ) {
 				    		if ( !filter.matches(tscatalog.getProjectName(), operator, false) ) {
+				    			matched = false;
+				    			break;
+				    		}
+				    	}
+				    	else if ( whereLabel.equals("projectStatus") ) {
+				    		// Only operator of equals is enabled so just compare.
+				    		String value = filter.getInputInternal();
+				    		if ( value.equals("Active") && !tscatalog.getProjectStatus().equals("1") ) {
+				    			matched = false;
+				    			break;
+				    		}
+				    		else if ( value.equals("Archived") && !tscatalog.getProjectStatus().equals("0") ) {
 				    			matched = false;
 				    			break;
 				    		}
@@ -1793,15 +2373,57 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		Message.printStatus(2, routine, "Reading users from: " + requestUrl);
 		List<User> userList = new ArrayList<>();
 		String [] elements = { "data", "users", "Data" };
-		JsonNode jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
-			this.debug, requestUrl, getHttpRequestProperties(), elements );
-		if ( jsonNode == null ) {
-			Message.printStatus(2, routine, "  Reading user returned null.");
-		}
-		else {
-			Message.printStatus(2, routine, "  Read " + jsonNode.size() + " user items.");
-			for ( int i = 0; i < jsonNode.size(); i++ ) {
-				userList.add((User)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), User.class));
+
+		// If the HTTP request returns 420, need to wait and try again.
+		int wait = 0;
+		int waitMax = 600000;
+		while ( true ) {
+			JsonNode jsonNode = null;
+			try {
+				jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
+					this.debug, requestUrl, getHttpRequestProperties(), elements );
+			}
+			catch ( HttpCodeException e ) {
+				Message.printStatus(2, routine, "HTTP code " + e.getCode() + " was returned indicating need to space out requests.");
+				if ( e.getCode() == 420 ) {
+					// The request is being made too fast so build in a wait.
+					if ( wait == 0 ) {
+						// Milliseconds:
+						// - start with 1/2 second
+						wait = 500;
+					}
+					else {
+						// Double the wait.
+						wait = (int)(wait * 2);
+					}
+					if ( wait > waitMax ) {
+						// Have gone past the maximum wait.  Throw an exception rather than waiting a long time.
+						String message = "HTTP code 420 wait retry is > limit " + waitMax + " ms - can't read user data.";
+						Message.printWarning(3, routine, message);
+						throw new IOException ( message );
+					}
+					// Wait the number of seconds.
+					Message.printStatus(2, routine, "HTTP code 420 returned.  Waiting " + wait + " ms and then retrying the request.");
+					try {
+						Thread.sleep(wait);
+					}
+					catch ( InterruptedException e2 ) {
+						// Should not occur.
+					}
+					// Go to the top of the loop and try to read again.
+					continue;
+				}
+			}
+			if ( jsonNode == null ) {
+				Message.printStatus(2, routine, "  Reading users returned null.");
+			}
+			else {
+				Message.printStatus(2, routine, "  Read " + jsonNode.size() + " user items.");
+				for ( int i = 0; i < jsonNode.size(); i++ ) {
+					userList.add((User)JacksonToolkit.getInstance().treeToValue(jsonNode.get(i), User.class));
+				}
+				// Break out of the read loop.
+				break;
 			}
 		}
 		return userList;

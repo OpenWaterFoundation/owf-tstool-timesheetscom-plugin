@@ -3,7 +3,7 @@
 /* NoticeStart
 
 OWF TSTool timesheetscom Plugin
-Copyright (C) 2023 Open Water Foundation
+Copyright (C) 2023-2024 Open Water Foundation
 
 OWF TSTool timesheetscom Plugin is free software:  you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -84,8 +84,8 @@ private ReadTimesheetsCom_Command __command = null;
 private SimpleJComboBox __DataStore_JComboBox = null;
 private SimpleJComboBox __DataType_JComboBox;
 private SimpleJComboBox __Interval_JComboBox;
-private TSFormatSpecifiersJPanel __Alias_JTextField = null;
 private JTabbedPane __tsInfo_JTabbedPane = null;
+private JTabbedPane __main_JTabbedPane = null;
 private JPanel __multipleTS_JPanel = null;
 private SimpleJComboBox __CustomerName_JComboBox = null;
 private SimpleJComboBox __ProjectName_JComboBox = null;
@@ -93,9 +93,25 @@ private SimpleJComboBox __UserLastName_JComboBox = null;
 private SimpleJComboBox __UserFirstName_JComboBox = null;
 private JTextField __DataSource_JTextField;
 private JTextField __TSID_JTextField;
+// Filters.
 private JTextField __InputStart_JTextField;
 private JTextField __InputEnd_JTextField;
+private SimpleJComboBox __IncludeHours_JComboBox = null;
+//private SimpleJComboBox __ProjectStatus_JComboBox = null;
+// Output.
+private TSFormatSpecifiersJPanel __Alias_JTextField = null;
+private SimpleJComboBox __DataFlag_JComboBox = null;
+private SimpleJComboBox __IfMissing_JComboBox;
 private SimpleJComboBox	__Debug_JComboBox;
+// Work notes.
+private SimpleJComboBox __WorkTableID_JComboBox = null;
+private SimpleJComboBox	__AppendWorkTable_JComboBox;
+// Tables.
+private JTextField __AccountCodeTableID_JTextField;
+private JTextField __CustomerTableID_JTextField;
+private JTextField __ProjectTableID_JTextField;
+private JTextField __ProjectTimeTableID_JTextField;
+private JTextField __UserTableID_JTextField;
 
 private JTextArea __command_JTextArea = null;
 // Contains all input filter panels.  Use the TimesheetsComDataStore name/description and data type for each to
@@ -113,10 +129,11 @@ private boolean __ignoreEvents = false; // Used to ignore cascading events when 
 Command editor constructor.
 @param parent JFrame class instantiating this class.
 @param command Command to edit.
+@param tableIDChoices choices for TableID value.
 */
-public ReadTimesheetsCom_JDialog ( JFrame parent, ReadTimesheetsCom_Command command ) {
+public ReadTimesheetsCom_JDialog ( JFrame parent, ReadTimesheetsCom_Command command, List<String> tableIDChoices ) {
 	super(parent, true);
-	initialize ( parent, command );
+	initialize ( parent, command, tableIDChoices );
 }
 
 /**
@@ -200,8 +217,11 @@ private void actionPerformedIntervalSelected ( ) {
     }
     // Populate the filters corresponding to the data type and interval.
     selectInputFilter ( getDataStore() );
-    // Populate the interval choices corresponding to the data type.
-    populateCustomerNameChoices ( getSelectedDataStore() );
+    // Populate the interval choices corresponding to the data type:
+    // - pass the command parameter so that if it is a property it will be listed
+	PropList props = __command.getCommandParameters();
+    String CustomerName = props.getValue ( "CustomerName" );
+    populateCustomerNameChoices ( getSelectedDataStore(), CustomerName );
 }
 
 /**
@@ -214,8 +234,11 @@ private void actionPerformedCustomerNameSelected ( ) {
         // Startup initialization.
         return;
     }
-    // Populate the project name choices corresponding to customer name.
-    populateProjectNameChoices ( getSelectedDataStore() );
+    // Populate the project name choices corresponding to customer name:
+    // - pass the command parameter so that if it is a property it will be listed
+	PropList props = __command.getCommandParameters();
+    String ProjectName = props.getValue ( "ProjectName" );
+    populateProjectNameChoices ( getSelectedDataStore(), ProjectName );
 }
 
 /**
@@ -228,8 +251,11 @@ private void actionPerformedProjectNameSelected ( ) {
         // Startup initialization.
         return;
     }
-    // Populate the user last name choices corresponding to the project name.
-    populateUserLastNameChoices ( getSelectedDataStore() );
+    // Populate the user last name choices corresponding to the project name:
+    // - pass the command parameter so that if it is a property it will be listed
+	PropList props = __command.getCommandParameters();
+    String UserLastName = props.getValue ( "UserLastName" );
+    populateUserLastNameChoices ( getSelectedDataStore(), UserLastName );
 }
 
 /**
@@ -254,8 +280,11 @@ private void actionPerformedUserLastNameSelected ( ) {
         // Startup initialization.
         return;
     }
-    // Populate the user first name choices corresponding to the user last name.
-    populateUserFirstNameChoices ( getSelectedDataStore() );
+    // Populate the user first name choices corresponding to the user last name:
+    // - pass the command parameter so that if it is a property it will be listed
+	PropList props = __command.getCommandParameters();
+    String UserFirstName = props.getValue ( "UserFirstName" );
+    populateUserFirstNameChoices ( getSelectedDataStore(), UserFirstName );
 }
 
 // Start event handlers for DocumentListener...
@@ -390,6 +419,14 @@ private void checkInput () {
 	if ( InputEnd.length() > 0 ) {
 		props.set ( "InputEnd", InputEnd );
 	}
+    String IncludeHours = __IncludeHours_JComboBox.getSelected();
+    if ( IncludeHours.length() > 0 ) {
+        props.set ("IncludeHours",IncludeHours);
+    }
+    //String ProjectStatus = __ProjectStatus_JComboBox.getSelected();
+    //if ( ProjectStatus.length() > 0 ) {
+    //    props.set ("ProjectStatus",ProjectStatus);
+    //}
     if ( whereCount > 0 ) {
         // Input filters are specified so check:
     	// - this is done in the input filter because that code is called from this command and main TSTool UI
@@ -400,10 +437,47 @@ private void checkInput () {
         	props.set("InputFiltersCheck",ifp.checkInputFilters(false));
         }
     }
+    String DataFlag = __DataFlag_JComboBox.getSelected();
+    if ( DataFlag.length() > 0 ) {
+        props.set ("DataFlag",DataFlag);
+    }
+    String IfMissing = __IfMissing_JComboBox.getSelected();
+    if ( IfMissing.length() > 0 ) {
+        props.set ("IfMissing",IfMissing);
+    }
+    String WorkTableID = __WorkTableID_JComboBox.getSelected();
+    if ( WorkTableID.length() > 0 ) {
+        props.set ( "WorkTableID", WorkTableID );
+    }
+    String AppendWorkTable = __AppendWorkTable_JComboBox.getSelected();
+    if ( AppendWorkTable.length() > 0 ) {
+        props.set ( "AppendWorkTable", AppendWorkTable );
+    }
 	String Debug = __Debug_JComboBox.getSelected();
 	if ( Debug.length() > 0 ) {
 		props.set ( "Debug", Debug );
 	}
+	// Tables.
+	String AccountCodeTableID = __AccountCodeTableID_JTextField.getText().trim();
+    if ( AccountCodeTableID.length() > 0 ) {
+        props.set ( "AccountCodeTableID", AccountCodeTableID );
+    }
+	String CustomerTableID = __CustomerTableID_JTextField.getText().trim();
+    if ( CustomerTableID.length() > 0 ) {
+        props.set ( "CustomerTableID", CustomerTableID );
+    }
+	String ProjectTableID = __ProjectTableID_JTextField.getText().trim();
+    if ( ProjectTableID.length() > 0 ) {
+        props.set ( "ProjectTableID", ProjectTableID );
+    }
+	String ProjectTimeTableID = __ProjectTimeTableID_JTextField.getText().trim();
+    if ( ProjectTimeTableID.length() > 0 ) {
+        props.set ( "ProjectTimeTableID", ProjectTimeTableID );
+    }
+	String UserTableID = __UserTableID_JTextField.getText().trim();
+    if ( UserTableID.length() > 0 ) {
+        props.set ( "UserTableID", UserTableID );
+    }
 	try {
 	    // This will warn the user.
 		__command.checkCommandParameters ( props, null, 1 );
@@ -454,8 +528,30 @@ private void commitEdits () {
 	__command.setCommandParameter ( "InputStart", InputStart );
 	String InputEnd = __InputEnd_JTextField.getText().trim();
 	__command.setCommandParameter ( "InputEnd", InputEnd );
+    String IncludeHours = __IncludeHours_JComboBox.getSelected();
+    __command.setCommandParameter ( "IncludeHours", IncludeHours );
+    //String ProjectStatus = __ProjectStatus_JComboBox.getSelected();
+    //__command.setCommandParameter ( "ProjectStatus", ProjectStatus );
+    String DataFlag = __DataFlag_JComboBox.getSelected();
+    __command.setCommandParameter ( "DataFlag", DataFlag );
+    String IfMissing = __IfMissing_JComboBox.getSelected();
+    __command.setCommandParameter ( "IfMissing", IfMissing );
+    String WorkTableID = __WorkTableID_JComboBox.getSelected();
+    __command.setCommandParameter ( "WorkTableID", WorkTableID );
+    String AppendWorkTable = __AppendWorkTable_JComboBox.getSelected();
+    __command.setCommandParameter ( "AppendWorkTable", AppendWorkTable );
 	String Debug = __Debug_JComboBox.getSelected();
 	__command.setCommandParameter (	"Debug", Debug );
+	String AccountCodeTableID = __AccountCodeTableID_JTextField.getText().trim();
+	__command.setCommandParameter (	"AccountCodeTableID", AccountCodeTableID );
+	String CustomerTableID = __CustomerTableID_JTextField.getText().trim();
+	__command.setCommandParameter (	"CustomerTableID", CustomerTableID );
+	String ProjectTableID = __ProjectTableID_JTextField.getText().trim();
+	__command.setCommandParameter (	"ProjectTableID", ProjectTableID );
+	String ProjectTimeTableID = __ProjectTimeTableID_JTextField.getText().trim();
+	__command.setCommandParameter (	"ProjectTimeTableID", ProjectTimeTableID );
+	String UserTableID = __UserTableID_JTextField.getText().trim();
+	__command.setCommandParameter (	"UserTableID", UserTableID );
 }
 
 /**
@@ -644,8 +740,9 @@ private String getWhere ( int ifg ) {
 Instantiates the GUI components.
 @param parent JFrame class instantiating this class.
 @param command Command to edit.
+@param tableIDChoices choices for TableID value.
 */
-private void initialize ( JFrame parent, ReadTimesheetsCom_Command command ) {
+private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List<String> tableIDChoices ) {
 	//String routine = getClass().getSimpleName() + ".initialize";
 	__command = command;
 	CommandProcessor processor = __command.getCommandProcessor();
@@ -757,8 +854,8 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command ) {
 
     JGUIUtil.addComponent(singleTS_JPanel, new JLabel ( "Customer name:"),
         0, ++ySingle, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
-    __CustomerName_JComboBox = new SimpleJComboBox ( false );
-    __CustomerName_JComboBox.setToolTipText("Customer name to match.");
+    __CustomerName_JComboBox = new SimpleJComboBox ( true ); // Editable so that property notation can be used.
+    __CustomerName_JComboBox.setToolTipText("Customer name to match, can use ${Property} notation.");
 	__CustomerName_JComboBox.addItemListener ( this );
     JGUIUtil.addComponent(singleTS_JPanel, __CustomerName_JComboBox,
         1, ySingle, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
@@ -767,8 +864,8 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command ) {
 
     JGUIUtil.addComponent(singleTS_JPanel, new JLabel ( "Project name:"),
         0, ++ySingle, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
-    __ProjectName_JComboBox = new SimpleJComboBox ( false );
-    __ProjectName_JComboBox.setToolTipText("Project name to match.");
+    __ProjectName_JComboBox = new SimpleJComboBox ( true ); // Editable so that property notation can be used.
+    __ProjectName_JComboBox.setToolTipText("Project name to match, can use ${Property} notation.");
 	__ProjectName_JComboBox.addItemListener ( this );
     JGUIUtil.addComponent(singleTS_JPanel, __ProjectName_JComboBox,
         1, ySingle, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
@@ -777,8 +874,8 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command ) {
 
     JGUIUtil.addComponent(singleTS_JPanel, new JLabel ( "User last name:"),
         0, ++ySingle, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
-    __UserLastName_JComboBox = new SimpleJComboBox ( false );
-    __UserLastName_JComboBox.setToolTipText("User last name to match.");
+    __UserLastName_JComboBox = new SimpleJComboBox ( true ); // Editable so that property notation can be used.
+    __UserLastName_JComboBox.setToolTipText("User last name to match, can use ${Property} notation.");
 	__UserLastName_JComboBox.addItemListener ( this );
     JGUIUtil.addComponent(singleTS_JPanel, __UserLastName_JComboBox,
         1, ySingle, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
@@ -787,8 +884,8 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command ) {
 
     JGUIUtil.addComponent(singleTS_JPanel, new JLabel ( "User first name:"),
         0, ++ySingle, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
-    __UserFirstName_JComboBox = new SimpleJComboBox ( false );
-    __UserFirstName_JComboBox.setToolTipText("User first name to match.");
+    __UserFirstName_JComboBox = new SimpleJComboBox ( true ); // Editable so that property notation can be used.
+    __UserFirstName_JComboBox.setToolTipText("User first name to match, can use ${Property} notation.");
 	__UserFirstName_JComboBox.addItemListener ( this );
     JGUIUtil.addComponent(singleTS_JPanel, __UserFirstName_JComboBox,
         1, ySingle, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
@@ -835,38 +932,142 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command ) {
     // Initialize all the filters (selection will be based on data store).
     initializeInputFilters ( __multipleTS_JPanel, ++yMult, dataStoreList );
 
-    JGUIUtil.addComponent(main_JPanel, new JLabel("Alias to assign:"),
-        0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    // Tabbed pane for other parameters.
+    __main_JTabbedPane = new JTabbedPane ();
+    JGUIUtil.addComponent(main_JPanel, __main_JTabbedPane,
+        0, ++y, 7, 1, 1, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
+
+    // Tab for query filters.
+    
+    JPanel filters_JPanel = new JPanel();
+    filters_JPanel.setLayout(new GridBagLayout());
+    __main_JTabbedPane.addTab ( "Query Filters", filters_JPanel );
+
+    int yFilters = -1;
+    JGUIUtil.addComponent(filters_JPanel, new JLabel(
+    	"These parameters filter the amount of data that is read."),
+        0, ++yFilters, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(filters_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
+        0, ++yFilters, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
+
+    JGUIUtil.addComponent(filters_JPanel, new JLabel ("Input start:"),
+        0, ++yFilters, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    __InputStart_JTextField = new JTextField (20);
+    __InputStart_JTextField.addKeyListener (this);
+    JGUIUtil.addComponent(filters_JPanel, __InputStart_JTextField,
+        1, yFilters, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(filters_JPanel, new JLabel ( "Optional - overrides the global input start."),
+        3, yFilters, 3, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST );
+
+    JGUIUtil.addComponent(filters_JPanel, new JLabel ( "Input end:"),
+        0, ++yFilters, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    __InputEnd_JTextField = new JTextField (20);
+    __InputEnd_JTextField.addKeyListener (this);
+    JGUIUtil.addComponent(filters_JPanel, __InputEnd_JTextField,
+        1, yFilters, 6, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(filters_JPanel, new JLabel ( "Optional - overrides the global input end."),
+        3, yFilters, 3, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST );
+
+    JGUIUtil.addComponent(filters_JPanel, new JLabel ( "Hours to include:"),
+            0, ++yFilters, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    List<String> Hours_List = new ArrayList<>( 4 );
+    Hours_List.add ( "" );
+    Hours_List.add ( __command._All );
+    Hours_List.add ( __command._Archived );
+    Hours_List.add ( __command._New );
+    __IncludeHours_JComboBox = new SimpleJComboBox ( false );
+    __IncludeHours_JComboBox.setToolTipText("Set the data flag as indicated.");
+    __IncludeHours_JComboBox.setData ( Hours_List);
+    __IncludeHours_JComboBox.select ( 0 );
+    __IncludeHours_JComboBox.addItemListener ( this );
+    JGUIUtil.addComponent(filters_JPanel, __IncludeHours_JComboBox,
+        1, yFilters, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(filters_JPanel, new JLabel (
+        "Optional - hours to include in time series (default=" + __command._All + ")."),
+        3, yFilters, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+
+    /*
+    JGUIUtil.addComponent(filters_JPanel, new JLabel ( "Project status:"),
+            0, ++yFilters, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    List<String> ProjectStatus_List = new ArrayList<>( 4 );
+    ProjectStatus_List.add ( "" );
+    ProjectStatus_List.add ( __command._Active );
+    ProjectStatus_List.add ( __command._Archived );
+    ProjectStatus_List.add ( __command._All );
+    __ProjectStatus_JComboBox = new SimpleJComboBox ( false );
+    __ProjectStatus_JComboBox.setToolTipText("Status of projects to include.");
+    __ProjectStatus_JComboBox.setData ( ProjectStatus_List);
+    __ProjectStatus_JComboBox.select ( 0 );
+    __ProjectStatus_JComboBox.addItemListener ( this );
+    JGUIUtil.addComponent(filters_JPanel, __ProjectStatus_JComboBox,
+        1, yFilters, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(filters_JPanel, new JLabel (
+        "Optional - status of projects to include (default=" + __command._Active + ")."),
+        3, yFilters, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+        */
+
+    // Tab for output.
+    
+    JPanel output_JPanel = new JPanel();
+    output_JPanel.setLayout(new GridBagLayout());
+    __main_JTabbedPane.addTab ( "Output", output_JPanel );
+    int yOutput = -1;
+
+    JGUIUtil.addComponent(output_JPanel, new JLabel(
+    	"These parameters control time series output."),
+        0, ++yOutput, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(output_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
+        0, ++yOutput, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
+
+    JGUIUtil.addComponent(output_JPanel, new JLabel("Alias to assign:"),
+        0, ++yOutput, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
     __Alias_JTextField = new TSFormatSpecifiersJPanel(10);
     __Alias_JTextField.setToolTipText("Use %L for location, %T for data type, %I for interval.");
     __Alias_JTextField.addKeyListener ( this );
     __Alias_JTextField.getDocument().addDocumentListener(this);
     __Alias_JTextField.setToolTipText("%L for location, %T for data type.");
-    JGUIUtil.addComponent(main_JPanel, __Alias_JTextField,
-        1, y, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
-    JGUIUtil.addComponent(main_JPanel, new JLabel ("Optional - use %L for location, etc. (default=no alias)."),
-        3, y, 3, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST );
+    JGUIUtil.addComponent(output_JPanel, __Alias_JTextField,
+        1, yOutput, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(output_JPanel, new JLabel ("Optional - use %L for location, etc. (default=no alias)."),
+        3, yOutput, 3, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST );
 
-    JGUIUtil.addComponent(main_JPanel, new JLabel ("Input start:"),
-        0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
-    __InputStart_JTextField = new JTextField (20);
-    __InputStart_JTextField.addKeyListener (this);
-    JGUIUtil.addComponent(main_JPanel, __InputStart_JTextField,
-        1, y, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
-    JGUIUtil.addComponent(main_JPanel, new JLabel ( "Optional - overrides the global input start."),
-        3, y, 3, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST );
+    JGUIUtil.addComponent(output_JPanel, new JLabel ( "Data flag:"),
+            0, ++yOutput, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    List<String> DataFlag_List = new ArrayList<>( 4 );
+    DataFlag_List.add ( "" );
+    DataFlag_List.add ( __command._Archived );
+    DataFlag_List.add ( __command._Archived0 );
+    DataFlag_List.add ( __command._Archived1 );
+    __DataFlag_JComboBox = new SimpleJComboBox ( false );
+    __DataFlag_JComboBox.setToolTipText("Set the data flag as indicated.");
+    __DataFlag_JComboBox.setData ( DataFlag_List);
+    __DataFlag_JComboBox.select ( 0 );
+    __DataFlag_JComboBox.addItemListener ( this );
+    JGUIUtil.addComponent(output_JPanel, __DataFlag_JComboBox,
+        1, yOutput, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(output_JPanel, new JLabel (
+        "Optional - how to handle missing time series (default=" + __command._Warn + ")."),
+        3, yOutput, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
 
-    JGUIUtil.addComponent(main_JPanel, new JLabel ( "Input end:"),
-        0, ++y, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
-    __InputEnd_JTextField = new JTextField (20);
-    __InputEnd_JTextField.addKeyListener (this);
-    JGUIUtil.addComponent(main_JPanel, __InputEnd_JTextField,
-        1, y, 6, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
-    JGUIUtil.addComponent(main_JPanel, new JLabel ( "Optional - overrides the global input end."),
-        3, y, 3, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST );
+    JGUIUtil.addComponent(output_JPanel, new JLabel ( "If missing:" ),
+        0, ++yOutput, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    List<String> IfMissing_List = new ArrayList<>( 3 );
+    IfMissing_List.add ( "" );
+    IfMissing_List.add ( __command._Ignore );
+    IfMissing_List.add ( __command._Warn );
+    __IfMissing_JComboBox = new SimpleJComboBox ( false );
+    __IfMissing_JComboBox.setToolTipText("How to handle missing time series.");
+    __IfMissing_JComboBox.setData ( IfMissing_List);
+    __IfMissing_JComboBox.select ( 0 );
+    __IfMissing_JComboBox.addItemListener ( this );
+    JGUIUtil.addComponent(output_JPanel, __IfMissing_JComboBox,
+        1, yOutput, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(output_JPanel, new JLabel (
+        "Optional - how to handle missing time series (default=" + __command._Warn + ")."),
+        3, yOutput, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
 
-    JGUIUtil.addComponent(main_JPanel, new JLabel ( "Debug:"),
-		0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    JGUIUtil.addComponent(output_JPanel, new JLabel ( "Debug:"),
+		0, ++yOutput, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
     List<String> Debug_List = new ArrayList<>( 3 );
 	Debug_List.add ( "" );
 	Debug_List.add ( __command._False );
@@ -876,11 +1077,135 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command ) {
 	__Debug_JComboBox.setData ( Debug_List);
 	__Debug_JComboBox.select ( 0 );
 	__Debug_JComboBox.addActionListener ( this );
-    JGUIUtil.addComponent(main_JPanel, __Debug_JComboBox,
-		1, y, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
-    JGUIUtil.addComponent(main_JPanel, new JLabel (
+    JGUIUtil.addComponent(output_JPanel, __Debug_JComboBox,
+		1, yOutput, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(output_JPanel, new JLabel (
 		"Optional - enable debug for web services (default=" + __command._False + ")."),
-		3, y, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+		3, yOutput, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+
+    // Tab for work notes.
+    
+    JPanel work_JPanel = new JPanel();
+    work_JPanel.setLayout(new GridBagLayout());
+    __main_JTabbedPane.addTab ( "Work Notes", work_JPanel );
+    int yWork = -1;
+
+    JGUIUtil.addComponent(work_JPanel, new JLabel(
+    	"Each time series record can include a note to describe the work that was done."),
+        0, ++yWork, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(work_JPanel, new JLabel(
+    	"The notes can be output to a table."),
+        0, ++yWork, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(work_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
+        0, ++yWork, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
+
+    JGUIUtil.addComponent(work_JPanel, new JLabel ( "Work table ID:" ),
+        0, ++yWork, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    __WorkTableID_JComboBox = new SimpleJComboBox ( 12, true ); // Allow edit.
+    __WorkTableID_JComboBox.setToolTipText("Specify the work table ID, can use ${Property} notation");
+    tableIDChoices.add(0,""); // Add blank to ignore table.
+    __WorkTableID_JComboBox.setData ( tableIDChoices );
+    __WorkTableID_JComboBox.addItemListener ( this );
+    __WorkTableID_JComboBox.getJTextComponent().addKeyListener ( this );
+    //__WorkTableID_JComboBox.setMaximumRowCount(tableIDChoices.size());
+    JGUIUtil.addComponent(work_JPanel, __WorkTableID_JComboBox,
+        1, yWork, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(work_JPanel, new JLabel( "Optional - table for work description output."),
+        3, yWork, 4, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+
+    JGUIUtil.addComponent(work_JPanel, new JLabel ( "Append to work table?:"),
+		0, ++yWork, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    List<String> appendList = new ArrayList<>( 3 );
+	appendList.add ( "" );
+	appendList.add ( __command._False );
+	appendList.add ( __command._True );
+	__AppendWorkTable_JComboBox = new SimpleJComboBox ( false );
+	__AppendWorkTable_JComboBox.setToolTipText("Append to the work table? (default=" + this.__command._False + ", (re)create the table).");
+	__AppendWorkTable_JComboBox.setData ( appendList);
+	__AppendWorkTable_JComboBox.select ( 0 );
+	__AppendWorkTable_JComboBox.addActionListener ( this );
+    JGUIUtil.addComponent(work_JPanel, __AppendWorkTable_JComboBox,
+		1, yWork, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(work_JPanel, new JLabel (
+		"Optional - append to work table (default=" + __command._False + ")."),
+		3, yWork, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+
+    // Tab for other tabular output.
+    
+    JPanel table_JPanel = new JPanel();
+    table_JPanel.setLayout(new GridBagLayout());
+    __main_JTabbedPane.addTab ( "Output Tables", table_JPanel );
+    int yTable = -1;
+
+    JGUIUtil.addComponent(table_JPanel, new JLabel(
+    	"Timesheets datastore data can be saved to tables, for example to:"),
+        0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(table_JPanel, new JLabel(
+    	"- review and troubleshoot timesheet data"),
+        0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(table_JPanel, new JLabel(
+    	"- save as Excel or a database for analysis"),
+        0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(table_JPanel, new JLabel(
+    	"- save a copy of the timesheet database as a backup"),
+        0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(table_JPanel, new JLabel(
+    	"The list of project time is the complete history and is not limited by query filters."),
+        0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(table_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
+        0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
+
+    JGUIUtil.addComponent(table_JPanel, new JLabel ( "Account codes table ID:"),
+		0, ++yTable, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+	__AccountCodeTableID_JTextField = new JTextField ( 30 );
+	__AccountCodeTableID_JTextField.setToolTipText("Table identifier for account codes.");
+	__AccountCodeTableID_JTextField.addKeyListener ( this );
+        JGUIUtil.addComponent(table_JPanel, __AccountCodeTableID_JTextField,
+		1, yTable, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(table_JPanel, new JLabel ( "Optional - table ID for account codes (default=not output)."),
+		3, yTable, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+
+    JGUIUtil.addComponent(table_JPanel, new JLabel ( "Customer table ID:"),
+		0, ++yTable, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+	__CustomerTableID_JTextField = new JTextField ( 30 );
+	__CustomerTableID_JTextField.setToolTipText("Table identifier for customers.");
+	__CustomerTableID_JTextField.addKeyListener ( this );
+        JGUIUtil.addComponent(table_JPanel, __CustomerTableID_JTextField,
+		1, yTable, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(table_JPanel, new JLabel ( "Optional - table ID for customers (default=not output)."),
+		3, yTable, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+
+    JGUIUtil.addComponent(table_JPanel, new JLabel ( "Project table ID:"),
+		0, ++yTable, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+	__ProjectTableID_JTextField = new JTextField ( 30 );
+	__ProjectTableID_JTextField.setToolTipText("Table identifier for projects.");
+	__ProjectTableID_JTextField.addKeyListener ( this );
+        JGUIUtil.addComponent(table_JPanel, __ProjectTableID_JTextField,
+		1, yTable, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(table_JPanel, new JLabel ( "Optional - table ID for projects (default=not output)."),
+		3, yTable, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    
+    JGUIUtil.addComponent(table_JPanel, new JLabel ( "Project time table ID:"),
+		0, ++yTable, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+	__ProjectTimeTableID_JTextField = new JTextField ( 30 );
+	__ProjectTimeTableID_JTextField.setToolTipText("Table identifier for project hourly time.");
+	__ProjectTimeTableID_JTextField.addKeyListener ( this );
+        JGUIUtil.addComponent(table_JPanel, __ProjectTimeTableID_JTextField,
+		1, yTable, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(table_JPanel, new JLabel ( "Optional - table ID for project time (default=not output)."),
+		3, yTable, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    
+    JGUIUtil.addComponent(table_JPanel, new JLabel ( "User time table ID:"),
+		0, ++yTable, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+	__UserTableID_JTextField = new JTextField ( 30 );
+	__UserTableID_JTextField.setToolTipText("Table identifier for users.");
+	__UserTableID_JTextField.addKeyListener ( this );
+        JGUIUtil.addComponent(table_JPanel, __UserTableID_JTextField,
+		1, yTable, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(table_JPanel, new JLabel ( "Optional - table ID for users (default=not output)."),
+		3, yTable, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    
+    // Command text area.
 
     JGUIUtil.addComponent(main_JPanel, new JLabel ( "Command:"),
 		0, ++y, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
@@ -1067,8 +1392,9 @@ Set the customer name choices in response to a new datastore being selected.
 The customer name choices are also in the where filter (for multiple time series)
 but a single customer is needed when reading a single time series.
 @param datastore the datastore to use to determine the customer names
+@param customerName the customer name from an existing command, added at the top if it contains ${
 */
-private void populateCustomerNameChoices ( TimesheetsComDataStore datastore ) {
+private void populateCustomerNameChoices ( TimesheetsComDataStore datastore, String customerName ) {
 	if ( datastore == null ) {
 		return;
 	}
@@ -1076,11 +1402,15 @@ private void populateCustomerNameChoices ( TimesheetsComDataStore datastore ) {
     	getSelectedDataType(), getSelectedInterval() );
     // Make a copy since adding a blank.
     List<String> customerNames = new ArrayList<>();
-    for ( String customerName : customerNames0 ) {
-    	customerNames.add(customerName);
+    for ( String customerName0 : customerNames0 ) {
+    	customerNames.add(customerName0);
     }
     // Add a blank because multiple time series tab might be used.
     customerNames.add(0,"");
+    if ( (customerName != null) && !customerName.isEmpty() && customerName.contains("${")  ) {
+    	// Insert the given choice.
+    	customerNames.add(1,customerName);
+    }
     __CustomerName_JComboBox.setData ( customerNames );
     // Select the default.
     if ( __CustomerName_JComboBox.getItemCount() > 0 ) {
@@ -1093,8 +1423,9 @@ Set the project name choices in response to a new datastore being selected.
 The project name choices are also in the where filter (for multiple time series)
 but a single customer is needed when reading a single time series.
 @param datastore the datastore to use to determine the customer names
+@param projectName the project name from an existing command, added at the top if it contains ${
 */
-private void populateProjectNameChoices ( TimesheetsComDataStore datastore ) {
+private void populateProjectNameChoices ( TimesheetsComDataStore datastore, String projectName ) {
 	if ( datastore == null ) {
 		return;
 	}
@@ -1102,11 +1433,15 @@ private void populateProjectNameChoices ( TimesheetsComDataStore datastore ) {
     	getSelectedDataType(), getSelectedInterval(), getSelectedCustomerName() );
     // Make a copy since adding a blank.
     List<String> projectNames = new ArrayList<>();
-    for ( String projectName : projectNames0 ) {
-    	projectNames.add(projectName);
+    for ( String projectName0 : projectNames0 ) {
+    	projectNames.add(projectName0);
     }
     // Add a blank because multiple time series tab might be used.
     projectNames.add(0,"");
+    if ( (projectName != null) && !projectName.isEmpty() && projectName.contains("${")  ) {
+    	// Insert the given choice.
+    	projectNames.add(1,projectName);
+    }
     __ProjectName_JComboBox.setData ( projectNames );
     // Select the default.
     if ( __ProjectName_JComboBox.getItemCount() > 0 ) {
@@ -1119,8 +1454,9 @@ Set the user first name choices in response to a new datastore being selected.
 The user first name choices are also in the where filter (for multiple time series)
 but a single customer is needed when reading a single time series.
 @param datastore the datastore to use to determine the customer names
+@param usrFirstName the user first name from an existing command, added at the top if it contains ${
 */
-private void populateUserFirstNameChoices ( TimesheetsComDataStore datastore ) {
+private void populateUserFirstNameChoices ( TimesheetsComDataStore datastore, String userFirstName ) {
 	if ( datastore == null ) {
 		return;
 	}
@@ -1130,11 +1466,15 @@ private void populateUserFirstNameChoices ( TimesheetsComDataStore datastore ) {
     	getSelectedUserLastName() );
     // Make a copy since adding a blank.
     List<String> userFirstNames = new ArrayList<>();
-    for ( String userFirstName : userFirstNames0 ) {
-    	userFirstNames.add(userFirstName);
+    for ( String userFirstName0 : userFirstNames0 ) {
+    	userFirstNames.add(userFirstName0);
     }
     // Add a blank because multiple time series tab might be used.
     userFirstNames.add(0,"");
+    if ( (userFirstName != null) && !userFirstName.isEmpty() && userFirstName.contains("${")  ) {
+    	// Insert the given choice.
+    	userFirstNames.add(1,userFirstName);
+    }
     __UserFirstName_JComboBox.setData ( userFirstNames );
     // Select the default.
     if ( __UserFirstName_JComboBox.getItemCount() > 0 ) {
@@ -1147,8 +1487,9 @@ Set the user last name choices in response to a new datastore being selected.
 The user last name choices are also in the where filter (for multiple time series)
 but a single customer is needed when reading a single time series.
 @param datastore the datastore to use to determine the customer names
+@param usrLastName the user last name from an existing command, added at the top if it contains ${
 */
-private void populateUserLastNameChoices ( TimesheetsComDataStore datastore ) {
+private void populateUserLastNameChoices ( TimesheetsComDataStore datastore, String userLastName ) {
 	if ( datastore == null ) {
 		return;
 	}
@@ -1156,11 +1497,15 @@ private void populateUserLastNameChoices ( TimesheetsComDataStore datastore ) {
     	getSelectedDataType(), getSelectedInterval(), getSelectedCustomerName(), getSelectedProjectName() );
     // Make a copy since adding a blank.
     List<String> userLastNames = new ArrayList<>();
-    for ( String userLastName : userLastNames0 ) {
-    	userLastNames.add(userLastName);
+    for ( String userLastName0 : userLastNames0 ) {
+    	userLastNames.add(userLastName0);
     }
     // Add a blank because multiple time series tab might be used.
     userLastNames.add(0,"");
+    if ( (userLastName != null) && !userLastName.isEmpty() && userLastName.contains("${")  ) {
+    	// Insert the given choice.
+    	userLastNames.add(1,userLastName);
+    }
     __UserLastName_JComboBox.setData ( userLastNames );
     // Select the default.
     if ( __UserLastName_JComboBox.getItemCount() > 0 ) {
@@ -1184,7 +1529,10 @@ private void populateDataTypeChoices ( TimesheetsComDataStore datastore ) {
     __DataType_JComboBox.setData ( dataTypes );
     // Select the default.
     // TODO smalers 2018-06-21 evaluate whether need datastore method for default.
-    __DataType_JComboBox.select(0);
+    if ( __DataType_JComboBox.getItemCount() > 0 ) {
+    	// Should only happen when the web service is unavailable.
+    	__DataType_JComboBox.select(0);
+    }
 }
 
 /**
@@ -1235,7 +1583,18 @@ private void refresh () {
 	String filterDelim = ";";
 	String InputStart = "";
 	String InputEnd = "";
+	String IncludeHours = "";
+	//String ProjectStatus = "";
+	String DataFlag = "";
+    String WorkTableID = "";
+    String AppendWorkTable = "";
+	String IfMissing = "";
 	String Debug = "";
+	String AccountCodeTableID = "";
+	String CustomerTableID = "";
+	String ProjectTableID = "";
+	String ProjectTimeTableID = "";
+	String UserTableID = "";
 	PropList props = null;
 	if ( __first_time ) {
 		__first_time = false;
@@ -1251,7 +1610,18 @@ private void refresh () {
 		Alias = props.getValue ( "Alias" );
 		InputStart = props.getValue ( "InputStart" );
 		InputEnd = props.getValue ( "InputEnd" );
+		IncludeHours = props.getValue ( "IncludeHours" );
+		//ProjectStatus = props.getValue ( "ProjectStatus" );
+		DataFlag = props.getValue ( "DataFlag" );
+		WorkTableID = props.getValue ( "WorkTableID" );
+		AppendWorkTable = props.getValue ( "AppendWorkTable" );
+		IfMissing = props.getValue ( "IfMissing" );
 		Debug = props.getValue ( "Debug" );
+		AccountCodeTableID = props.getValue ( "AccountCodeTableID" );
+		CustomerTableID = props.getValue ( "CustomerTableID" );
+		ProjectTableID = props.getValue ( "ProjectTableID" );
+		ProjectTimeTableID = props.getValue ( "ProjectTimeTableID" );
+		UserTableID = props.getValue ( "UserTableID" );
         // The data store list is set up in initialize() but is selected here.
         if ( JGUIUtil.isSimpleJComboBoxItem(__DataStore_JComboBox, DataStore, JGUIUtil.NONE, null, null ) ) {
             __DataStore_JComboBox.select ( null ); // To ensure that following causes an event.
@@ -1319,7 +1689,7 @@ private void refresh () {
             }
         }
         // Populate the customer name choices.
-        populateCustomerNameChoices(getSelectedDataStore());
+        populateCustomerNameChoices(getSelectedDataStore(), CustomerName);
         // Now select what the command had previously (if specified).
 	    if ( JGUIUtil.isSimpleJComboBoxItem( __CustomerName_JComboBox, CustomerName, JGUIUtil.NONE, null, null ) ) {
             __CustomerName_JComboBox.select (CustomerName);
@@ -1344,7 +1714,7 @@ private void refresh () {
             }
         }
         // Populate the project name choices.
-        populateProjectNameChoices(getSelectedDataStore());
+        populateProjectNameChoices(getSelectedDataStore(), ProjectName);
         // Now select what the command had previously (if specified).
 	    if ( JGUIUtil.isSimpleJComboBoxItem( __ProjectName_JComboBox, ProjectName, JGUIUtil.NONE, null, null ) ) {
             __ProjectName_JComboBox.select (ProjectName);
@@ -1369,7 +1739,7 @@ private void refresh () {
             }
         }
         // Populate the user last name choices.
-        populateUserLastNameChoices(getSelectedDataStore());
+        populateUserLastNameChoices(getSelectedDataStore(), UserLastName);
         // Now select what the command had previously (if specified).
 	    if ( JGUIUtil.isSimpleJComboBoxItem( __UserLastName_JComboBox, UserLastName, JGUIUtil.NONE, null, null ) ) {
             __UserLastName_JComboBox.select (UserLastName);
@@ -1394,7 +1764,7 @@ private void refresh () {
             }
         }
         // Populate the user first name choices.
-        populateUserFirstNameChoices(getSelectedDataStore());
+        populateUserFirstNameChoices(getSelectedDataStore(), UserFirstName);
         // Now select what the command had previously (if specified).
 	    if ( JGUIUtil.isSimpleJComboBoxItem( __UserFirstName_JComboBox, UserFirstName, JGUIUtil.NONE, null, null ) ) {
             __UserFirstName_JComboBox.select (UserFirstName);
@@ -1461,6 +1831,109 @@ private void refresh () {
 		if ( InputEnd != null ) {
 			__InputEnd_JTextField.setText ( InputEnd );
 		}
+        if ( IncludeHours == null ) {
+            // Select default.
+            __IncludeHours_JComboBox.select ( 0 );
+        }
+        else {
+            if ( JGUIUtil.isSimpleJComboBoxItem(
+                __IncludeHours_JComboBox, IncludeHours, JGUIUtil.NONE, null, null ) ) {
+                __IncludeHours_JComboBox.select ( IncludeHours);
+            }
+            else {
+                Message.printWarning ( 1, routine,
+                "Existing command references an invalid IncludeHours value \"" + IncludeHours +
+                "\".\nSelect a different value or Cancel.");
+                __error_wait = true;
+            }
+        }
+		/*
+        if ( ProjectStatus == null ) {
+            // Select default.
+            __ProjectStatus_JComboBox.select ( 0 );
+        }
+        else {
+            if ( JGUIUtil.isSimpleJComboBoxItem(
+                __ProjectStatus_JComboBox, ProjectStatus, JGUIUtil.NONE, null, null ) ) {
+                __ProjectStatus_JComboBox.select ( ProjectStatus);
+            }
+            else {
+                Message.printWarning ( 1, routine,
+                "Existing command references an invalid ProjectStatus value \"" + ProjectStatus +
+                "\".\nSelect a different value or Cancel.");
+                __error_wait = true;
+            }
+        }
+        */
+        if ( DataFlag == null ) {
+            // Select default.
+            __DataFlag_JComboBox.select ( 0 );
+        }
+        else {
+            if ( JGUIUtil.isSimpleJComboBoxItem(
+                __DataFlag_JComboBox, DataFlag, JGUIUtil.NONE, null, null ) ) {
+                __DataFlag_JComboBox.select ( DataFlag);
+            }
+            else {
+                Message.printWarning ( 1, routine,
+                "Existing command references an invalid DataFlag value \"" + DataFlag +
+                "\".\nSelect a different value or Cancel.");
+                __error_wait = true;
+            }
+        }
+        if ( WorkTableID == null ) {
+            // Select default.
+            __WorkTableID_JComboBox.select ( 0 );
+        }
+        else {
+            if ( JGUIUtil.isSimpleJComboBoxItem( __WorkTableID_JComboBox,WorkTableID, JGUIUtil.NONE, null, null ) ) {
+                __WorkTableID_JComboBox.select ( WorkTableID );
+            }
+            else {
+                // Creating new table so add in the first position.
+                if ( __WorkTableID_JComboBox.getItemCount() == 0 ) {
+                    __WorkTableID_JComboBox.add(WorkTableID);
+                }
+                else {
+                    __WorkTableID_JComboBox.insert(WorkTableID, 0);
+                }
+                __WorkTableID_JComboBox.select(0);
+            }
+        }
+	    if ( JGUIUtil.isSimpleJComboBoxItem( __AppendWorkTable_JComboBox, AppendWorkTable, JGUIUtil.NONE, null, null ) ) {
+            //__AppendWorkTable_JComboBox.select (index[0] );
+            __AppendWorkTable_JComboBox.select (AppendWorkTable);
+        }
+        else {
+            Message.printStatus(2,routine,"AppendWorkTable=\"" + AppendWorkTable + "\" is invalid.");
+            if ( (AppendWorkTable == null) || AppendWorkTable.equals("") ) {
+                // New command...select the default.
+                // Populating the list above selects the default that is appropriate so no need to do here.
+            	__AppendWorkTable_JComboBox.select (0);
+            }
+            else {
+                // Bad user command.
+                Message.printWarning ( 1, routine, "Existing command references an invalid\n"+
+                  "AppendWorkTable parameter \"" + Interval + "\".  Select a\ndifferent value or Cancel." );
+            	__AppendWorkTable_JComboBox.select (0);
+            }
+        }
+        if ( IfMissing == null ) {
+            // Select default.
+            __IfMissing_JComboBox.select ( 0 );
+        }
+        else {
+            if ( JGUIUtil.isSimpleJComboBoxItem(
+                __IfMissing_JComboBox, IfMissing, JGUIUtil.NONE, null, null ) ) {
+                __IfMissing_JComboBox.select ( IfMissing);
+            }
+            else {
+                Message.printWarning ( 1, routine,
+                "Existing command references an invalid IfMissing value \"" + IfMissing +
+                "\".\nSelect a different value or Cancel.");
+                __error_wait = true;
+            }
+        }
 	    if ( JGUIUtil.isSimpleJComboBoxItem( __Debug_JComboBox, Debug, JGUIUtil.NONE, null, null ) ) {
             //__Debug_JComboBox.select (index[0] );
             __Debug_JComboBox.select (Debug);
@@ -1479,6 +1952,21 @@ private void refresh () {
             	__Debug_JComboBox.select (0);
             }
         }
+	    if ( AccountCodeTableID != null ) {
+		    __AccountCodeTableID_JTextField.setText ( AccountCodeTableID );
+	    }
+	    if ( CustomerTableID != null ) {
+		    __CustomerTableID_JTextField.setText ( CustomerTableID );
+	    }
+	    if ( ProjectTableID != null ) {
+		    __ProjectTableID_JTextField.setText ( ProjectTableID );
+	    }
+	    if ( ProjectTimeTableID != null ) {
+		    __ProjectTimeTableID_JTextField.setText ( ProjectTimeTableID );
+	    }
+	    if ( UserTableID != null ) {
+		    __UserTableID_JTextField.setText ( UserTableID );
+	    }
 	}
 	// Regardless, reset the command from the fields.
     DataStore = __DataStore_JComboBox.getSelected();
@@ -1565,8 +2053,30 @@ private void refresh () {
 	props.add ( "InputStart=" + InputStart );
 	InputEnd = __InputEnd_JTextField.getText().trim();
 	props.add ( "InputEnd=" + InputEnd );
+	IncludeHours = __IncludeHours_JComboBox.getSelected();
+    props.add ( "IncludeHours=" + IncludeHours );
+	//ProjectStatus = __ProjectStatus_JComboBox.getSelected();
+	//props.add ( "ProjectStatus=" + ProjectStatus );
+	DataFlag = __DataFlag_JComboBox.getSelected();
+    props.add ( "DataFlag=" + DataFlag );
+	IfMissing = __IfMissing_JComboBox.getSelected();
+    props.add ( "IfMissing=" + IfMissing );
+	WorkTableID = __WorkTableID_JComboBox.getSelected();
+    props.add ( "WorkTableID=" + WorkTableID );
+	AppendWorkTable = __AppendWorkTable_JComboBox.getSelected();
+    props.add ( "AppendWorkTable=" + AppendWorkTable );
 	Debug = __Debug_JComboBox.getSelected();
 	props.add ( "Debug=" + Debug );
+	AccountCodeTableID = __AccountCodeTableID_JTextField.getText().trim();
+	props.add ( "AccountCodeTableID=" + AccountCodeTableID );
+	CustomerTableID = __CustomerTableID_JTextField.getText().trim();
+	props.add ( "CustomerTableID=" + CustomerTableID );
+	ProjectTableID = __ProjectTableID_JTextField.getText().trim();
+	props.add ( "ProjectTableID=" + ProjectTableID );
+	ProjectTimeTableID = __ProjectTimeTableID_JTextField.getText().trim();
+	props.add ( "ProjectTimeTableID=" + ProjectTimeTableID );
+	UserTableID = __UserTableID_JTextField.getText().trim();
+	props.add ( "UserTableID=" + UserTableID );
 	__command_JTextArea.setText( __command.toString ( props ).trim() );
 
 	// Check the GUI state to determine whether some controls should be disabled.

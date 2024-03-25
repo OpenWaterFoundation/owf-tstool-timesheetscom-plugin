@@ -83,8 +83,9 @@ public class User {
 	/**
 	 * "USERNAME"
 	 */
-	@JsonProperty("USERNAME")
-	private String userName = "";
+	// TODO smalers 2024-03-21 is this used?
+	//@JsonProperty("USERNAME")
+	//private String userName = "";
 
 	/**
 	 * "USERSTATUS"
@@ -96,6 +97,86 @@ public class User {
 	 * Default constructor used by Jackson.
 	 */
 	public User () {
+	}
+	
+	/**
+	 * Get the access.
+	 * @return the access
+	 */
+	public String getAccess () {
+		return this.access;
+	}
+
+	/**
+	 * Get the adminUserId.
+	 * @return the adminUserId
+	 */
+	public String getAdminUserId () {
+		return this.adminUserId;
+	}
+	
+	/**
+	 * Get the concatName.
+	 * @return the concatName
+	 */
+	public String getConcatName () {
+		return this.concatName;
+	}
+	
+	/**
+	 * Get the employeeNumber.
+	 * @return the employeeNumber
+	 */
+	public String getEmployeeNumber () {
+		return this.employeeNumber;
+	}
+	
+	/**
+	 * Get the firstName.
+	 * @return the firstName
+	 */
+	public String getFirstName () {
+		return this.firstName;
+	}
+	
+	/**
+	 * Get the jobTitle.
+	 * @return the jobTitle
+	 */
+	public String getJobTitle () {
+		return this.jobTitle;
+	}
+	
+	/**
+	 * Get the lastName.
+	 * @return the lastName
+	 */
+	public String getLastName () {
+		return this.lastName;
+	}
+	
+	/**
+	 * Get the userId.
+	 * @return the userId
+	 */
+	public String getUserId () {
+		return this.userId;
+	}
+	
+	/**
+	 * Get the userName.
+	 * @return the userName
+	 */
+	//public String getUserName () {
+	//	return this.userName;
+	//}
+	
+	/**
+	 * Get the userStatus.
+	 * @return the userStatus
+	 */
+	public String getUserStatus () {
+		return this.userStatus;
 	}
 	
 }

@@ -123,16 +123,17 @@ public class JacksonToolkit {
 		
 		//System.out.println(url);
 		
+		// Whether the URL was read OK.
+		boolean didRead = false;
+		int responseCode = -1;
 		try {
 			//request = new URL(url);
 			// Need to call something like HttpURLConnection.setRequestProperty
 			UrlReader urlReader = new UrlReader ( url, requestProperties, requestData );
 			UrlResponse urlResponse = null;
-			// Whether the URL was read OK.
-			boolean didRead = false;
 			try {
 				urlResponse = urlReader.read();
-				int responseCode = urlResponse.getResponseCode();
+				responseCode = urlResponse.getResponseCode();
 				if ( responseCode != 200 ) {
 					Message.printWarning(2, routine, "HTTP response code = " + responseCode );
 					didRead = false;
@@ -229,6 +230,10 @@ public class JacksonToolkit {
 		catch ( IOException e ) {
 			Message.printWarning(2, routine, "IOException (" + e + ").");
 			throw e;
+		}
+		
+		if ( !didRead && (responseCode != 200) ) {
+			throw new HttpCodeException("HTTP request had an error (" + responseCode + ").", responseCode );
 		}
 		
 		return results;

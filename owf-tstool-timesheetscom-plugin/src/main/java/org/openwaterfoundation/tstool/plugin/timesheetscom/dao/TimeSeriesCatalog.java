@@ -49,6 +49,7 @@ public class TimeSeriesCatalog {
 	// Project data, listed alphabetically.
 	private String projectId = "";
 	private String projectName = "";
+	private String projectStatus = "";  // Looked up from the project.
 
 	// User data, listed alphabetically.
 	private String userId = "";
@@ -101,7 +102,9 @@ public class TimeSeriesCatalog {
 		this.customerName = timeSeriesCatalog.customerName;
 
 		// Project data, listed alphabetically.
+		this.projectId = timeSeriesCatalog.projectId;
 		this.projectName = timeSeriesCatalog.projectName;
+		this.projectStatus = timeSeriesCatalog.projectStatus;
 
 		// User data, listed alphabetically.
 		this.userFirstName = timeSeriesCatalog.userFirstName;
@@ -129,8 +132,9 @@ public class TimeSeriesCatalog {
 	/**
 	 * Constructor for report project customizable record.
 	 * @param data report project customizable data record to add as a time series catalog entry
+	 * @param project the project matching the data
 	 */
-	public TimeSeriesCatalog ( ReportProjectCustomizableData data ) {
+	public TimeSeriesCatalog ( ReportProjectCustomizableData data, Project project ) {
 		// General time series properties.
 		this.locId = "'" + data.getCustomerName() + "/" + data.getProjectName() + "/"
 			+ data.getLastName() + "," + data.getFirstName() + "'";
@@ -143,9 +147,13 @@ public class TimeSeriesCatalog {
 		this.customerId = data.getCustomerId();
 		this.customerName = data.getCustomerName();
 		
-		// Project data.
+		// Project data:
+		// - need to look up status from the projects
 		this.projectId = data.getProjectId();
 		this.projectName = data.getProjectName();
+		if ( project != null ) {
+			this.projectStatus = project.getProjectStatus();
+		}
 		
 		// User data.
 		this.userId = data.getUserId();
@@ -410,6 +418,14 @@ public class TimeSeriesCatalog {
 	 */
 	public String getProjectName ( ) {
 		return this.projectName;
+	}
+
+	/**
+	 * Return the project status.
+	 * @return the project status
+	 */
+	public String getProjectStatus ( ) {
+		return this.projectStatus;
 	}
 
 	/**

@@ -58,6 +58,7 @@ public class ReportProjectCustomizableRecord {
 	 * This should be called after reading from the API.
 	 */
 	public void cleanData () {
+		// The record includes multiple data records.
 		for ( ReportProjectCustomizableData data : dataList ) {
 			data.cleanData();
 		}
