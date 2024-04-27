@@ -461,7 +461,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 
     /**
      * Get the global list of cached customers.
-     * @return the global list of cached customers 
+     * @return the global list of cached customers
      */
     public List<Customer> getCustomerCache () {
     	return this.customerList;
@@ -521,7 +521,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     public long getGlobalDataExpirationOffset () {
     	return this.globalDataExpirationOffset;
     }
-    
+
     /**
      * Get the global data expiration time.
      * @return the global data expiration time
@@ -541,6 +541,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	/**
 	 * Get the HTTP request properties (HTTP headers).
 	 * This must be added to all HTTP requests.
+	 * @return a dictionary of HTTP request headers.
 	 */
 	public MultiKeyStringDictionary getHttpRequestProperties () {
 		MultiKeyStringDictionary requestProperties = new MultiKeyStringDictionary();
@@ -604,7 +605,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 
     /**
      * Get the global list of cached projects.
-     * @return the global list of cached projects 
+     * @return the global list of cached projects
      */
     public List<Project> getProjectCache () {
     	return this.projectList;
@@ -668,7 +669,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     	Collections.sort ( projectNames, String.CASE_INSENSITIVE_ORDER );
     	return projectNames;
     }
-    
+
     /**
      * Get the cached ReportProjectCustomizableData.
      * This is a list of reports, which each have data records.
@@ -1029,7 +1030,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	public JWorksheet_AbstractRowTableModel getTimeSeriesListTableModel(List<? extends Object> data) {
     	return new TimesheetsCom_TimeSeries_TableModel(this,(List<TimeSeriesCatalog>)data);
     }
-    
+
     /**
      * Get the global list of cached users.
      * @return the global list of cached users
@@ -1702,8 +1703,12 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 				"&AllAccountCodes=1" +
 				// All customers.
 				"&AllCustomers=1" +
-				// All employees.
-				"&AllEmployees=1" +
+				// All employees:
+				// - changed to AllUsers in API version 1.0.1?
+				//"&AllEmployees=1" +
+				// All users:
+				// - replaces AllEmployees in API version 1.0.1?
+				"&AllUsers=1" +
 				// Includes all active projects:
 				// - seems to include archived projects also
 				"&AllProjects=1" +
