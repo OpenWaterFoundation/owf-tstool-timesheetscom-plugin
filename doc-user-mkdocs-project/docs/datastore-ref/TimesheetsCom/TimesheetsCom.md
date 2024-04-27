@@ -211,6 +211,7 @@ Authorization = "INSERT AUTHORIZATION"
 # Known maximum daily limit (default is one year):
 # - specify to increase the size of data read to increase performance
 RequestDayLimit = 2500
+# Debug = True
 ```
 
 **<p style="text-align: center;">
@@ -229,6 +230,7 @@ TimesheetsCom Web Services DataStore Configuration File Properties
 | -- | -- | -- |
 | `ApiKey` | The API key for the user. |
 | `Authorization` | The API authorization for the user. |
+| `Debug` | Turn on additional logging messages, for example to troubleshoot integration with the API. |
 | `Description`<br>**required** | Description of the datastore, typically a short sentence, used in some displays. | None - must be specified. |
 | `Enabled` | Indicates whether the datastore is enabled. | `True` |
 | `Name`<br>**required** | Datastore name that is used in the TSTool software and TimesheetsCom plugin commands.  The name should be unique across all datastores. | None - must be specified. |
