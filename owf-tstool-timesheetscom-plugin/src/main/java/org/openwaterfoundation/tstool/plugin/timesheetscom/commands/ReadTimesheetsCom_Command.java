@@ -187,6 +187,7 @@ throws InvalidCommandParameterException {
     String InputEnd = parameters.getValue ( "InputEnd" );
     String IncludeHours = parameters.getValue ( "IncludeHours" );
     //String ProjectStatus = parameters.getValue ( "ProjectStatus" );
+    String OutputTimeSeries = parameters.getValue ( "OutputTimeSeries" );
     String DataFlag = parameters.getValue ( "DataFlag" );
     String IfMissing = parameters.getValue ( "IfMissing" );
     String AppendWorkTable = parameters.getValue ( "AppendWorkTable" );
@@ -259,6 +260,15 @@ throws InvalidCommandParameterException {
                 message, "Specify as " + _Active + ", " + _Archived + ", or " + _All + "." ) );
     }
     */
+
+	if ( (OutputTimeSeries != null) && !OutputTimeSeries.equals("") &&
+		!OutputTimeSeries.equalsIgnoreCase(_False) && !OutputTimeSeries.equalsIgnoreCase(_True) ) {
+        message = "The OutputTimeSeries parameter value is invalid.";
+		warning += "\n" + message;
+           status.addToLog ( CommandPhaseType.INITIALIZATION,
+               new CommandLogRecord(CommandStatusType.FAILURE,
+                   message, "Specify " + _False + " or " + _True + " (default).") );
+	}
 
     if ( (DataFlag != null) && !DataFlag.equals("") &&
         !DataFlag.equalsIgnoreCase(_Archived) && !DataFlag.equalsIgnoreCase(_Archived0) && !DataFlag.equalsIgnoreCase(_Archived1) ) {
@@ -425,6 +435,7 @@ throws InvalidCommandParameterException {
     validList.add ( "IncludeHours" );
     //validList.add ( "ProjectStatus" );
     // Output.
+    validList.add ( "OutputTimeSeries" );
     validList.add ( "Alias" );
     validList.add ( "DataFlag" );
     validList.add ( "IfMissing" );
@@ -472,7 +483,7 @@ private DataTable createAccountCodeTable ( TimesheetsComDataStore dataStore, Str
 	table.addField(new TableField(TableField.DATA_TYPE_STRING, "DEFAULTUSERPAYRATE", -1, -1), null);
 	table.addField(new TableField(TableField.DATA_TYPE_STRING, "USERPAYRATE", -1, -1), null);
 	table.addField(new TableField(TableField.DATA_TYPE_STRING, "READONLY", -1, -1), null);
-	
+
 	int errorCount = 0;
 	for ( AccountCode code : dataStore.getAccountCodeCache() ) {
 		try {
@@ -503,7 +514,7 @@ private DataTable createAccountCodeTable ( TimesheetsComDataStore dataStore, Str
 			++errorCount;
 		}
 	}
-	
+
 	if ( errorCount > 0 ) {
 		throw new RuntimeException ( "Error creating account code table - run with debug and review log file." );
 	}
@@ -670,12 +681,12 @@ private DataTable createProjectTable ( TimesheetsComDataStore dataStore, String 
 	if ( errorCount > 0 ) {
 		throw new RuntimeException ( "Error creating project table - run with debug and review log file." );
 	}
-	
+
 	// Sort by the project name and then project status descending so that active are listed first.
 	String [] sortColumns = { "PROJECTNAME", "PROJECTSTATUS" };
 	int [] sortOrder = { 1, -1 };
 	table.sortTable(sortColumns, sortOrder);
-	
+
 	return table;
 }
 
@@ -713,7 +724,7 @@ private DataTable createProjectTimeTable ( TimesheetsComDataStore dataStore, Str
 	table.addField(new TableField(TableField.DATA_TYPE_STRING, "RECORDID", -1, -1), null);
 	table.addField(new TableField(TableField.DATA_TYPE_STRING, "SIGNED", -1, -1), null);
 	table.addField(new TableField(TableField.DATA_TYPE_STRING, "USDERID", -1, -1), null);
-	
+
 	int errorCount = 0;
 	for ( ReportProjectCustomizableReportData report: dataStore.getReportProjectCustomizableDataCache() ) {
 		ReportProjectCustomizableRecord record = report.getReportProjectCustomizableRecord();
@@ -788,7 +799,7 @@ private DataTable createUserTable ( TimesheetsComDataStore dataStore, String use
 	table.addField(new TableField(TableField.DATA_TYPE_STRING, "EMPLOYEENUMBER", -1, -1), null);
 	table.addField(new TableField(TableField.DATA_TYPE_STRING, "USERID", -1, -1), null);
 	//table.addField(new TableField(TableField.DATA_TYPE_STRING, "USERNAME", -1, -1), null);
-	
+
 	int errorCount = 0;
 	for ( User user : dataStore.getUserCache() ) {
 		try {
@@ -822,7 +833,7 @@ private DataTable createUserTable ( TimesheetsComDataStore dataStore, String use
 	if ( errorCount > 0 ) {
 		throw new RuntimeException ( "Error creating user table - run with debug and review log file." );
 	}
-	
+
 	return table;
 }
 
@@ -1108,6 +1119,11 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	if ( (AppendWorkTable != null) && AppendWorkTable.equalsIgnoreCase(_True) ) {
 		doAppendWorkTable = true;
 	}
+    String OutputTimeSeries = parameters.getValue("OutputTimeSeries");
+    boolean outputTimeSeries = true;
+	if ( (OutputTimeSeries != null) && OutputTimeSeries.equalsIgnoreCase("false") ) {
+		outputTimeSeries = false;
+	}
     String DataFlag = parameters.getValue ("DataFlag" );
 	if ( commandPhase == CommandPhaseType.RUN ) {
 	    DataFlag = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, DataFlag);
@@ -1222,7 +1238,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	}
 
 	// Get the datastore here because it is needed to create the table.
-	
+
     String DataStore = parameters.getValue ( "DataStore" );
     TimesheetsComDataStore dataStore = null;
 	if ( (DataStore != null) && !DataStore.equals("") ) {
@@ -1266,7 +1282,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
         		else {
         			Message.printStatus(2, routine, "Appending to existing table \"" + WorkTableID + "\".");
         		}
-        		
+
         		// Create table with standard columns.
         		workTable = dataStore.createWorkTable ( WorkTableID );
 
@@ -1302,12 +1318,8 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	List<TS> tslist = new ArrayList<>();
 	try {
         String Alias = parameters.getValue ( "Alias" );
-        //String TSID = parameters.getValue ( "TSID" );
-        if ( dataStore != null ) {
+        if ( outputTimeSeries && (dataStore != null) ) {
 			// Have a datastore so try to read.
-        	// See if a Where has been specified by checking for the first Where clause.
-			String WhereN = parameters.getValue ( "Where" + 1 );
-			//if ( (WhereN == null) || WhereN.isEmpty() ) { // }
 			if ( (CustomerName != null) && !CustomerName.isEmpty() ) {
 				// Have single customer name so try to read the single matching time series.
 				TSIdent tsident = new TSIdent();
@@ -1339,7 +1351,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 					TS ts = null;
 					try {
 						HashMap<String,Object> readProperties = createReadProperties ( debug, DataFlag, IncludeHours ); //, ProjectStatus );
-						if ( (commandPhase == CommandPhaseType.DISCOVERY) && TSID.contains("${") ) {
+						if ( (commandPhase == CommandPhaseType.DISCOVERY) && TSID.contains("${") ) { // }
 							// Create a single time series with the identifier.
 							ts = TSUtil.newTimeSeries(TSID, true);
 						}
@@ -1399,9 +1411,11 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 				List<String> whereNList = new ArrayList<>();
 				int nfg = 0; // Used below.
 				// User may have skipped a where and left a blank so loop over a sufficiently large number of where parameters
-				// to get the non-blank filters.
+				// to get the non-blank filters:
+				// - expand the Where parameter because the input may contain a property
 				for ( int ifg = 0; ifg < 25; ifg++ ) {
-					WhereN = parameters.getValue ( "Where" + (ifg + 1) );
+					String WhereN = parameters.getValue ( "Where" + (ifg + 1) );
+					WhereN = TSCommandProcessorUtil.expandParameterValue(getCommandProcessor(), this, WhereN);
 					if ( WhereN != null ) {
 						++nfg;
 						whereNList.add ( WhereN );
@@ -1429,7 +1443,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 
 				String filterDelim = ";";
 				for ( int ifg = 0; ifg < nfg; ifg++ ) {
-					WhereN = whereNList.get(ifg);
+					String WhereN = whereNList.get(ifg);
 	                if ( WhereN.length() == 0 ) {
 	                    continue;
 	                }
@@ -1448,9 +1462,13 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	                // - will exactly match a choice
 	                // - also allow setting the text in the SimpleJComboBox
 					try {
-						//boolean setTextIfNoChoiceMatches = true;
-	                    //filterPanel.setInputFilter( ifg, WhereN, filterDelim, setTextIfNoChoiceMatches );
-	                    filterPanel.setInputFilter( ifg, WhereN, filterDelim );
+						// The following allows setting ${Property} in a choice.
+						boolean setTextIfNoChoiceMatches = false;
+						if ( WhereN.contains("${") ) { // }
+							setTextIfNoChoiceMatches = true;
+						}
+	                    filterPanel.setInputFilter( ifg, WhereN, filterDelim, setTextIfNoChoiceMatches );
+	                    //filterPanel.setInputFilter( ifg, WhereN, filterDelim );
 					}
 					catch ( Exception e ) {
 	                    message = "Error setting where information using \"" + WhereN + "\"";
@@ -1483,7 +1501,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 					}
 
 					// Filter based on project active/archived.
-					
+
 					// Default is to only read time series for active projects.
 					/*
 					boolean doProjectActive = true;
@@ -1500,13 +1518,13 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 						doProjectActive = true;
 						doProjectArchived = true;
 					}
-				
+
 					if ( !doProjectActive || !doProjectArchived ) {
 						// Need to check whether projects are active/archived.
 						// Loop backwards so the list size can be changed.
 						for ( int i = tsCatalogList.size() - 1; i >= 0; --i ) {
 							int projectId = Integer.valueOf(tsCatalogList.get(i).getProjectId());
-    		
+
 							if ( doProjectActive ) {
 								// Only process active projects.
 								if ( !dataStore.projectIsActive(projectId) ) {
@@ -1524,7 +1542,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 						size = tsCatalogList.size();
 					}
 					*/
-	
+
 					// Make sure that size is set.
 	       			if ( size == 0 ) {
 						Message.printStatus ( 2, routine,"No TimesheetsCom web service time series were found." );
@@ -1608,7 +1626,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 						}
 					}
 				} // Command phase RUN.
-			} // End reading using input filters.
+			} // End reading 1+ time series using input filters.
 		}
 
         int size = 0;
@@ -1616,7 +1634,10 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
             size = tslist.size();
         }
 
-        if ( commandPhase == CommandPhaseType.RUN ) {
+        if ( !outputTimeSeries ) {
+        	// Put code here to avoid time series processing.
+        }
+        else if ( commandPhase == CommandPhaseType.RUN ) {
         	Message.printStatus ( 2, routine, "Read " + size + " TimesheetsCom web service time series." );
             if ( tslist != null ) {
                 // Further process the time series.
@@ -1849,7 +1870,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 				}
        		}
 		}
-        
+
 		if ( doUserTable ) {
 			if ( commandPhase == CommandPhaseType.DISCOVERY ) {
 				DataTable table = new DataTable();
@@ -1894,9 +1915,9 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
        			}
 			}
 		}
-        
+
         // Check whether the datastore had errors reading global data.
-        
+
         List<String> problems = dataStore.getGlobalDataProblems();
         if ( (problems != null) && !problems.isEmpty() ) {
         	for ( String problem : problems ) {
@@ -1906,7 +1927,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
                	Message.printWarning(3, routine, problem);
         	}
         }
-        
+
 	} // End if have datastore.
 	catch ( Exception e ) {
 		Message.printWarning ( 3, routine, e );
@@ -2020,6 +2041,7 @@ public String toString ( PropList parameters ) {
 		"IncludeHours",
 		//"ProjectStatus",
 		// Output.
+		"OutputTimeSeries",
 		"Alias",
 		"DataFlag",
 		"IfMissing",

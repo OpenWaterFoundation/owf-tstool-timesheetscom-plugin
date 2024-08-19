@@ -35,7 +35,7 @@ public class TimesheetsComDataStoreFactory implements DataStoreFactory {
 	Create a TimesheetsComDataStore instance.
 	@param props datastore configuration properties, such as read from the configuration file
 	*/
-	public DataStore create ( PropList props ) {  
+	public DataStore create ( PropList props ) {
 	    String name = props.getValue ( "Name" );
 	    String description = props.getValue ( "Description" );
 	    if ( description == null ) {

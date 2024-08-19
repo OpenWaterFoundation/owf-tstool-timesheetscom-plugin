@@ -7,12 +7,24 @@ See the [TSTool release notes](http://opencdss.state.co.us/tstool/latest/doc-use
 Plugin release notes are listed below.
 The repository issue for release note item is shown where applicable.
 
+*   [Changes in Version 1.1.2](#changes-in-version-112)
 *   [Changes in Version 1.1.1](#changes-in-version-111)
 *   [Changes in Version 1.1.0](#changes-in-version-110)
 *   [Changes in Version 1.0.1](#changes-in-version-101)
 *   [Changes in Version 1.0.0](#changes-in-version-100)
 
 ----------
+
+## Changes in Version 1.1.2 ##
+
+**Maintenance release to improve functionity for billing analysis workflows.**
+
+*   The [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command has been enhanced:
+    +   ![bug](bug.png) Fix bug where the `Where` filters were not working correctly.
+    +   ![change](change.png) Add the `Alias` parameter to the command editor (previously, was accidentally omitted).
+    +   ![change](change.png) Add the `OutputTimeSeries` parameter to control whether time series are output.
+        Using `False` allows reading and outputting tables such as user and project list without outputting time series.
+    +   ![change](change.png) Add the project default billing rate and created date to the time series catalog and set as time series properties.
 
 ## Changes in Version 1.1.1 ##
 

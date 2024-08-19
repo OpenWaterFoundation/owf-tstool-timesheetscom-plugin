@@ -263,7 +263,7 @@ public class Customer {
 
 	/**
 	 * Return the created date.
-	 * @return the created date 
+	 * @return the created date
 	 */
 	public String getCreatedDate () {
 		return this.createdDate;
@@ -271,7 +271,7 @@ public class Customer {
 
 	/**
 	 * Return the creator name.
-	 * @return the creator name 
+	 * @return the creator name
 	 */
 	public String getCreatorName () {
 		return this.creatorName;
@@ -279,7 +279,7 @@ public class Customer {
 
 	/**
 	 * Return the creator user ID.
-	 * @return the creator user ID 
+	 * @return the creator user ID
 	 */
 	public String getCreatorUserId () {
 		return this.creatorUserId;
@@ -287,7 +287,7 @@ public class Customer {
 
 	/**
 	 * Return the customer ID.
-	 * @return the customer ID 
+	 * @return the customer ID
 	 */
 	public String getCustomerId () {
 		return this.customerId;
@@ -295,7 +295,7 @@ public class Customer {
 	
 	/**
 	 * Return the customer ID as an integer.
-	 * @return the customer ID as an integer 
+	 * @return the customer ID as an integer
 	 */
 	public int getCustomerIdAsInteger () {
 		return this.customerIdAsInteger;
@@ -303,7 +303,7 @@ public class Customer {
 	
 	/**
 	 * Return the customer name.
-	 * @return the customer name 
+	 * @return the customer name
 	 */
 	public String getCustomerName () {
 		return this.customerName;
@@ -319,7 +319,7 @@ public class Customer {
 	
 	/**
 	 * Return the customer number.
-	 * @return the customer number 
+	 * @return the customer number
 	 */
 	public String getCustomerNumber () {
 		return this.customerNumber;
@@ -327,7 +327,7 @@ public class Customer {
 	
 	/**
 	 * Return the customer status.
-	 * @return the customer status 
+	 * @return the customer status
 	 */
 	public String getCustomerStatus () {
 		return this.customerStatus;
@@ -335,7 +335,7 @@ public class Customer {
 	
 	/**
 	 * Return whether read only.
-	 * @return whether read only 
+	 * @return whether read only
 	 */
 	public String getReadOnly () {
 		return this.readOnly;

@@ -13,6 +13,7 @@ checkMkdocsVersion() {
 
   # Required MkDocs version is at least 1
   requiredMajorVersion="1"
+  # On Git bash, mkdocs --version gives:  pytyon -m mkdocs, version 1.0.4 from c:\program files\python36\lib\site-packages\mkdocs (Python 3.6)
   # On Cygwin, mkdocs --version gives:  mkdocs, version 1.0.4 from /usr/lib/python3.6/site-packages/mkdocs (Python 3.6)
   # On Debian Linux, similar to Cygwin:  mkdocs, version 0.17.3
   mkdocsVersionFull=$(${mkdocsExe} --version)
@@ -21,11 +22,13 @@ checkMkdocsVersion() {
     echo "Unable to determine MkDocs version."
     exit 1
   fi
-  mkdocsVersion=$(echo ${mkdocsVersionFull} | cut -d ' ' -f 3)
+  # Get the version as in '1.0.4':
+  # - leading space in result results in version in third spot
+  mkdocsVersion=$(echo ${mkdocsVersionFull} | cut -d ',' -f 2 | cut -d ' ' -f 3)
   echo "MkDocs full version number:  ${mkdocsVersion}"
   mkdocsMajorVersion=$(echo ${mkdocsVersion} | cut -d '.' -f 1)
   echo "MkDocs major version number:  ${mkdocsMajorVersion}"
-  if [ "${mkdocsMajorVersion}" -lt "${requiredMajorVersion}" ]; then
+  if [ ${mkdocsMajorVersion} -lt ${requiredMajorVersion} ]; then
     echo ""
     echo "MkDocs version for this documentation must be version ${requiredMajorVersion} or later."
     echo "MkDocs mersion that is found is ${mkdocsMajorVersion}, from full version ${mkdocsVersion}."
@@ -128,7 +131,7 @@ cd ..
 # - use port 8000 for user documentation
 port=8000
 echo "View the website using http://localhost:${port}"
-echo "Stop the server with CTRL-C"
+echo "Stop the server with CTRL-c"
 ${mkdocsExe} serve -a 0.0.0.0:${port}
 
 # Exit with MkDocs exit status.

@@ -34,25 +34,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class ReportProjectCustomizableRecord {
 	// Alphabetize.
-	
+
 	/**
 	 * "RowCount"
 	 */
 	//@JsonProperty("RowCount")
 	//private Integer rowCount = null;
-	
+
 	/**
 	 * "Data"
 	 */
 	@JsonProperty("Data")
 	private List<ReportProjectCustomizableData> dataList = new ArrayList<>();
-	
+
 	/**
 	 * Default constructor used by Jackson.
 	 */
 	public ReportProjectCustomizableRecord () {
 	}
-	
+
 	/**
 	 * Clean the data (e.g., convert strings to other types).
 	 * This should be called after reading from the API.

@@ -46,7 +46,7 @@ public class TimesheetsCom_TimeSeries_CellRenderer extends JWorksheet_AbstractEx
 	@return the column format as used by StringUtil.formatString().
 	*/
 	public String getFormat(int column) {
-		return this.tableModel.getFormat(column);	
+		return this.tableModel.getFormat(column);
 	}
 
 	/**

@@ -34,25 +34,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class Project {
 	// Alphabetize.
-	
+
 	/**
 	 * "CREATEDDATE"
 	 */
 	@JsonProperty("CREATEDDATE")
 	private String createdDate = "";
-	
+
 	/**
 	 * "CREATORNAME"
 	 */
 	@JsonProperty("CREATORNAME")
 	private String creatorName = "";
-	
+
 	/**
 	 * "CREATORUSERID"
 	 */
 	@JsonProperty("CREATORUSERID")
 	private String creatorUserId = "";
-	
+
 	// TODO smalers 2024-03-21 did this used to be included.  I don't see it now so how does a project relate to a customer?
 	/**
 	 * "CUSTOMERID"
@@ -64,55 +64,60 @@ public class Project {
 	 * Customer ID as an integer.
 	 */
 	private int customerIdAsInteger = -1;
-	
+
 	/**
 	 * "DEFAULTBILLRATE"
 	 */
 	@JsonProperty("DEFAULTBILLRATE")
 	private String defaultBillRate = "";
-	
+
+	/**
+	 * Default billing rate as a Float.
+	 */
+	private Float defaultBillRateAsFloat = null;
+
 	/**
 	 * "DEFAULTUSERBILLRATE"
 	 */
 	@JsonProperty("DEFAULTUSERBILLRATE")
 	private String defaultUserBillRate = "";
-	
+
 	/**
 	 * "MINIMUMTIMEINCREMENT"
 	 */
 	@JsonProperty("MINIMUMTIMEINCREMENT")
 	private String minimumTimeIncrement = "";
-	
+
 	/**
 	 * "PROJECTDESCRIPTION"
 	 */
 	@JsonProperty("PROJECTDESCRIPTION")
 	private String projectDescription = "";
-	
+
 	/**
 	 * "PROJECTID"
 	 */
 	@JsonProperty("PROJECTID")
 	private String projectId = "";
-	
+
 	/**
 	 * "PROJECTID" as an integer.
 	 */
 	@JsonIgnore
 	private int projectIdAsInteger = -1;
-	
+
 	/**
 	 * "PROJECTNAME"
 	 */
 	@JsonProperty("PROJECTNAME")
 	private String projectName = "";
-	
+
 	/**
 	 * "PROJECTNAMEPLAIN"
 	 */
 	@JsonProperty("PROJECTNAMEPLAIN")
 	private String projectNamePlain = "";
-	
+
 	/**
 	 * "PROJECTSTATUS"
 	 * - "1" is active
@@ -120,31 +125,32 @@ public class Project {
 	 */
 	@JsonProperty("PROJECTSTATUS")
 	private String projectStatus = "";
-	
+
 	/**
 	 * "PROJECTSTATUS" as an integer.
 	 */
 	@JsonIgnore
 	private int projectStatusAsInteger = -1;
-	
+
 	/**
 	 * "READONLY"
 	 */
 	@JsonProperty("READONLY")
 	private String readOnly = "";
-	
+
 	/**
 	 * "USERBILLRATE"
+	 * Average hourly billing rate.
 	 */
 	@JsonProperty("USERBILLRATE")
 	private String userBillRate = "";
-	
+
 	/**
 	 * Default constructor used by Jackson.
 	 */
 	public Project () {
 	}
-	
+
 	/**
 	 * Clean the data (e.g., convert strings to other types).
 	 * This should be called after reading data using the API.
@@ -158,6 +164,20 @@ public class Project {
 		}
 		this.projectIdAsInteger = Integer.valueOf(this.projectId);
 		this.projectStatusAsInteger = Integer.valueOf(this.projectStatus);
+
+		// Set the project default bill rate:
+		// - in most cases it will be 0 because that is the default in the web application when creating a new project
+		try {
+			if ( (this.defaultBillRate == null) || this.defaultBillRate.trim().isEmpty() ) {
+				this.defaultBillRateAsFloat = null;
+			}
+			else {
+				this.defaultBillRateAsFloat = Float.valueOf(this.defaultBillRate);
+			}
+		}
+		catch ( NumberFormatException e ) {
+			this.defaultBillRateAsFloat = null;
+		}
 	}
 
 	/**
@@ -184,7 +204,7 @@ public class Project {
 
 	/**
 	 * Return the created date.
-	 * @return the created date 
+	 * @return the created date
 	 */
 	public String getCreatedDate () {
 		return this.createdDate;
@@ -192,20 +212,20 @@ public class Project {
 
 	/**
 	 * Return the creator name.
-	 * @return the creator name 
+	 * @return the creator name
 	 */
 	public String getCreatorName () {
 		return this.creatorName;
 	}
-	
+
 	/**
 	 * Return the creator user ID.
-	 * @return the creator user ID 
+	 * @return the creator user ID
 	 */
 	public String getCreatorUserId () {
 		return this.creatorUserId;
 	}
-	
+
 	/**
 	 * Return the customer ID
 	 * @return the customer ID
@@ -221,7 +241,7 @@ public class Project {
 	public int getCustomerIdAsInteger () {
 		return this.customerIdAsInteger;
 	}
-	
+
 	/**
 	 * Return the default bill rate.
 	 * @return the default bill rate
@@ -229,7 +249,15 @@ public class Project {
 	public String getDefaultBillRate () {
 		return this.defaultBillRate;
 	}
-	
+
+	/**
+	 * Return the default bill rate as a Float.
+	 * @return the default bill rate as a Float.
+	 */
+	public Float getDefaultBillRateAsFloat () {
+		return this.defaultBillRateAsFloat;
+	}
+
 	/**
 	 * Return the default user bill rate.
 	 * @return the default user bill rate
@@ -237,7 +265,7 @@ public class Project {
 	public String getDefaultUserBillRate () {
 		return this.defaultUserBillRate;
 	}
-	
+
 	/**
 	 * Return the minimum time increment
 	 * @return the minimum time increment
@@ -245,7 +273,7 @@ public class Project {
 	public String getMinimumTimeIncrement () {
 		return this.minimumTimeIncrement;
 	}
-	
+
 	/**
 	 * Return the project description
 	 * @return the project description
@@ -253,7 +281,7 @@ public class Project {
 	public String getProjectDescription () {
 		return this.projectDescription;
 	}
-	
+
 	/**
 	 * Return the project ID
 	 * @return the project ID
@@ -261,7 +289,7 @@ public class Project {
 	public String getProjectId () {
 		return this.projectId;
 	}
-	
+
 	/**
 	 * Get the project ID as an integer.
 	 * @return the project ID as an integer
@@ -269,7 +297,7 @@ public class Project {
 	public int getProjectIdAsInteger () {
 		return this.projectIdAsInteger;
 	}
-	
+
 	/**
 	 * Return the project name
 	 * @return the project name
@@ -277,7 +305,7 @@ public class Project {
 	public String getProjectName () {
 		return this.projectName;
 	}
-	
+
 	/**
 	 * Return the project name, plain
 	 * @return the project name, plain
@@ -285,7 +313,7 @@ public class Project {
 	public String getProjectNamePlain () {
 		return this.projectNamePlain;
 	}
-	
+
 	/**
 	 * Return the project status
 	 * @return the project status
@@ -293,7 +321,7 @@ public class Project {
 	public String getProjectStatus () {
 		return this.projectStatus;
 	}
-	
+
 	/**
 	 * Get the project status as an integer.
 	 * @return the project status as an integer
@@ -301,15 +329,15 @@ public class Project {
 	public int getProjectStatusAsInteger () {
 		return this.projectStatusAsInteger;
 	}
-	
+
 	/**
 	 * Return whether read only.
-	 * @return whether read only 
+	 * @return whether read only
 	 */
 	public String getReadOnly () {
 		return this.readOnly;
 	}
-	
+
 	/**
 	 * Return the user bill rate
 	 * @return the user bill rate
@@ -317,5 +345,5 @@ public class Project {
 	public String getUserBillRate () {
 		return this.userBillRate;
 	}
-	
+
 }

@@ -34,11 +34,11 @@ By default the sheet will contain row and column numbers.
 */
 @SuppressWarnings({ "serial", "rawtypes" })
 public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowTableModel {
-	
+
 	/**
 	Number of columns in the table model.
 	*/
-	private final int COLUMNS = 13;
+	private final int COLUMNS = 15;
 
 	//public final int COL_LOCATION_ID = 0;
 	public final int COL_LOCID = 0;
@@ -46,15 +46,17 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 	public final int COL_DATA_INTERVAL = 2;
 	public final int COL_CUSTOMER_NAME = 3;
 	public final int COL_PROJECT_NAME = 4;
-	public final int COL_LAST_NAME = 5;
-	public final int COL_FIRST_NAME = 6;
-	public final int COL_DATA_UNITS = 7;
-	public final int COL_CUSTOMER_ID = 8;
-	public final int COL_PROJECT_ID = 9;
-	public final int COL_USER_ID = 10;
-	public final int COL_PROBLEMS = 11;
-	public final int COL_DATASTORE = 12;
-	
+	public final int COL_PROJECT_CREATED_DATE = 5;
+	public final int COL_PROJECT_DEFAULT_BILL_RATE = 6;
+	public final int COL_LAST_NAME = 7;
+	public final int COL_FIRST_NAME = 8;
+	public final int COL_DATA_UNITS = 9;
+	public final int COL_CUSTOMER_ID = 10;
+	public final int COL_PROJECT_ID = 11;
+	public final int COL_USER_ID = 12;
+	public final int COL_PROBLEMS = 13;
+	public final int COL_DATASTORE = 14;
+
 	/**
 	Datastore corresponding to datastore used to retrieve the data.
 	*/
@@ -118,6 +120,8 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 			//case COL_STATISTIC: return "Statistic";
 			case COL_CUSTOMER_NAME: return "Customer Name";
 			case COL_PROJECT_NAME: return "Project Name";
+			case COL_PROJECT_CREATED_DATE: return "Project Created Date";
+			case COL_PROJECT_DEFAULT_BILL_RATE: return "Project Default Bill Rate";
 			case COL_LAST_NAME: return "Last Name";
 			case COL_FIRST_NAME: return "First Name";
 			case COL_DATA_UNITS: return "Units";
@@ -143,6 +147,8 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 	    //toolTips[COL_STATISTIC] = "NOT USED - statistic for regular interval data (included in main data type)";
 	    toolTips[COL_CUSTOMER_NAME] = "Customer name";
 	    toolTips[COL_PROJECT_NAME] = "Project name";
+	    toolTips[COL_PROJECT_CREATED_DATE] = "Project created date";
+	    toolTips[COL_PROJECT_DEFAULT_BILL_RATE] = "Project default bill rate";
 	    toolTips[COL_LAST_NAME] = "Last name";
 	    toolTips[COL_FIRST_NAME] = "First name";
 	    toolTips[COL_DATA_UNITS] = "Time series data value units";
@@ -166,6 +172,8 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 	    //widths[COL_STATISTIC] = 8;
 	    widths[COL_CUSTOMER_NAME] = 25;
 	    widths[COL_PROJECT_NAME] = 45;
+	    widths[COL_PROJECT_CREATED_DATE] = 15;
+	    widths[COL_PROJECT_DEFAULT_BILL_RATE] = 12;
 	    widths[COL_LAST_NAME] = 15;
 	    widths[COL_FIRST_NAME] = 15;
 	    widths[COL_DATA_UNITS] = 6;
@@ -184,9 +192,7 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 	*/
 	public String getFormat ( int column ) {
 		switch (column) {
-			//case COL_STATION_LONGITUDE: return "%.6f";
-			//case COL_STATION_LATITUDE: return "%.6f";
-			//case COL_STATION_ELEVATION: return "%.2f";
+			case COL_PROJECT_DEFAULT_BILL_RATE: return "%.2f";
 			default: return "%s"; // All else are strings.
 		}
 	}
@@ -220,14 +226,16 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 			// Data units come from the general value, which will be from point_type or rating.
 			case COL_CUSTOMER_NAME: return timeSeriesCatalog.getCustomerName();
 			case COL_PROJECT_NAME: return timeSeriesCatalog.getProjectName();
+			case COL_PROJECT_CREATED_DATE: return timeSeriesCatalog.getProjectCreatedDate();
+			case COL_PROJECT_DEFAULT_BILL_RATE: return timeSeriesCatalog.getProjectDefaultBillRate();
 			case COL_LAST_NAME: return timeSeriesCatalog.getUserLastName();
 			case COL_FIRST_NAME: return timeSeriesCatalog.getUserFirstName();
 			case COL_DATA_UNITS: return timeSeriesCatalog.getDataUnits();
 			case COL_CUSTOMER_ID: return timeSeriesCatalog.getCustomerId();
 			case COL_PROJECT_ID: return timeSeriesCatalog.getProjectId();
 			case COL_USER_ID: return timeSeriesCatalog.getUserId();
-			case COL_PROBLEMS: return timeSeriesCatalog.formatProblems();			
-			case COL_DATASTORE: return this.datastore.getName();			
+			case COL_PROBLEMS: return timeSeriesCatalog.formatProblems();
+			case COL_DATASTORE: return this.datastore.getName();
 			default: return "";
 		}
 	}

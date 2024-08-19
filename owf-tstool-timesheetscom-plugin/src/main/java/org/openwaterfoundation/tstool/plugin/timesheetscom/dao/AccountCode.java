@@ -31,25 +31,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class AccountCode {
 	// Alphabetize.
-	
+
 	/**
 	 * "ACCOUNTCODEDESCRIPTION"
 	 */
 	@JsonProperty("ACCOUNTCODEDESCRIPTION")
 	private String accountCodeDescription = "";
-	
+
 	/**
 	 * "ACCOUNTCODEID"
 	 */
 	@JsonProperty("ACCOUNTCODEID")
 	private String accountCodeId = "";
-	
+
 	/**
 	 * "ACCOUNTCODENAME"
 	 */
 	@JsonProperty("ACCOUNTCODENAME")
 	private String accountCodeName = "";
-	
+
 	/**
 	 * "ACCOUNTCODENAMEPLAIN"
 	 */
@@ -67,43 +67,43 @@ public class AccountCode {
 	 */
 	@JsonProperty("CREATEDDATE")
 	private String createdDate = "";
-	
+
 	/**
 	 * "CREATORUSERID"
 	 */
 	@JsonProperty("CREATORUSERID")
 	private String creatorUserId = "";
-	
+
 	/**
 	 * "CREATORNAME"
 	 */
 	@JsonProperty("CREATORNAME")
 	private String creatorName = "";
-	
+
 	/**
 	 * "DEFAULTPAYRATE"
 	 */
 	@JsonProperty("DEFAULTPAYRATE")
 	private String defaultPayRate = "";
-	
+
 	/**
 	 * "DEFAULTUSERPAYRATE"
 	 */
 	@JsonProperty("DEFAULTUSERPAYRATE")
 	private String defaultUserPayRate = "";
-	
+
 	/**
 	 * "READONLY"
 	 */
 	@JsonProperty("READONLY")
 	private String readOnly = "";
-	
+
 	/**
 	 * "USERPAYRATE"
 	 */
 	@JsonProperty("USERPAYRATE")
 	private String userPayRate = "";
-	
+
 	/**
 	 * Default constructor used by Jackson.
 	 */
@@ -157,7 +157,7 @@ public class AccountCode {
 	public String getCreatedDate () {
 		return this.createdDate;
 	}
-	
+
 	/**
 	 * Return the creator user ID.
 	 * @return the creator user ID
@@ -165,15 +165,15 @@ public class AccountCode {
 	public String getCreatorUserId () {
 		return this.creatorUserId;
 	}
-	
+
 	/**
 	 * Return the creator name.
-	 * @return the creator name 
+	 * @return the creator name
 	 */
 	public String getCreatorName () {
 		return this.creatorName;
 	}
-	
+
 	/**
 	 * Return the default pay rate.
 	 * @return the default pay rate.
@@ -181,7 +181,7 @@ public class AccountCode {
 	public String getDefaultPayRate () {
 		return this.defaultPayRate;
 	}
-	
+
 	/**
 	 * Return the default user pay rate.
 	 * @return the default user pay rate.
@@ -192,12 +192,12 @@ public class AccountCode {
 
 	/**
 	 * Return whether read only.
-	 * @return whether read only 
+	 * @return whether read only
 	 */
 	public String getReadOnly () {
 		return this.readOnly;
 	}
-	
+
 	/**
 	 * Return the user pay rate.
 	 * @return the user pay rate
@@ -205,7 +205,7 @@ public class AccountCode {
 	public String getUserPayRate () {
 		return this.userPayRate;
 	}
-	
+
 	/**
 	 * Return a string representation of the object, useful for troubleshooting.
 	 */
@@ -215,5 +215,5 @@ public class AccountCode {
 			this.description + "\" color=\"" + this.color + "\"";
 	}
 	*/
-	
+
 }

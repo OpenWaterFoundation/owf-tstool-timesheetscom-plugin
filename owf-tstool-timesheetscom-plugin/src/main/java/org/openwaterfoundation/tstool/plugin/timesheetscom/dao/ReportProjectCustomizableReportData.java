@@ -37,38 +37,38 @@ import RTi.Util.Time.DateTime;
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class ReportProjectCustomizableReportData {
 	// Alphabetize.
-	
+
 	/**
 	 * "TotalHours"
 	 */
 	@JsonProperty("TotalHours")
 	private String totalHours = "";
-	
+
 	/**
 	 * "Records":
 	 * - is is actually just one record, not a list
 	 */
 	@JsonProperty("Records")
 	private ReportProjectCustomizableRecord record = null;
-	
+
 	/**
 	 * Start date for the query, not currently used for anything.
 	 */
 	@JsonIgnore
 	DateTime startDate = null;
-	
+
 	/**
 	 * End date for the query, not currently used for anything.
 	 */
 	@JsonIgnore
 	DateTime endDate = null;
-	
+
 	/**
 	 * Default constructor used by Jackson.
 	 */
 	public ReportProjectCustomizableReportData () {
 	}
-	
+
 	/**
 	 * Clean the data (e.g., convert strings to other types).
 	 * This should be called after reading from the API.
@@ -85,7 +85,7 @@ public class ReportProjectCustomizableReportData {
 	public ReportProjectCustomizableRecord getReportProjectCustomizableRecord () {
 		return this.record;
 	}
-	
+
 	/**
 	 * Set the start date for the query.
 	 */
