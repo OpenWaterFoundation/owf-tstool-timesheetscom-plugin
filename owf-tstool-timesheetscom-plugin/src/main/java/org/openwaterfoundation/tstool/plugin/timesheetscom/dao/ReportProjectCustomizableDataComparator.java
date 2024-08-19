@@ -12,7 +12,7 @@ public class ReportProjectCustomizableDataComparator implements Comparator<Repor
 	 */
 	public ReportProjectCustomizableDataComparator () {
 	}
-	
+
 	/**
 	 * Compare two ReportProjectCustomizableDataComparator.
 	 * If dataA is < dataB, return -1.

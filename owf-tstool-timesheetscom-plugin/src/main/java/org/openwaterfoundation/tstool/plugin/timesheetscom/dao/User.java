@@ -31,7 +31,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown=true)
 public class User {
 	// Alphabetize.
-	
+
 	/**
 	 * "ACCESS"
 	 */
@@ -98,7 +98,7 @@ public class User {
 	 */
 	public User () {
 	}
-	
+
 	/**
 	 * Get the access.
 	 * @return the access
@@ -114,7 +114,7 @@ public class User {
 	public String getAdminUserId () {
 		return this.adminUserId;
 	}
-	
+
 	/**
 	 * Get the concatName.
 	 * @return the concatName
@@ -122,7 +122,7 @@ public class User {
 	public String getConcatName () {
 		return this.concatName;
 	}
-	
+
 	/**
 	 * Get the employeeNumber.
 	 * @return the employeeNumber
@@ -130,7 +130,7 @@ public class User {
 	public String getEmployeeNumber () {
 		return this.employeeNumber;
 	}
-	
+
 	/**
 	 * Get the firstName.
 	 * @return the firstName
@@ -138,7 +138,7 @@ public class User {
 	public String getFirstName () {
 		return this.firstName;
 	}
-	
+
 	/**
 	 * Get the jobTitle.
 	 * @return the jobTitle
@@ -146,7 +146,7 @@ public class User {
 	public String getJobTitle () {
 		return this.jobTitle;
 	}
-	
+
 	/**
 	 * Get the lastName.
 	 * @return the lastName
@@ -154,7 +154,7 @@ public class User {
 	public String getLastName () {
 		return this.lastName;
 	}
-	
+
 	/**
 	 * Get the userId.
 	 * @return the userId
@@ -162,7 +162,7 @@ public class User {
 	public String getUserId () {
 		return this.userId;
 	}
-	
+
 	/**
 	 * Get the userName.
 	 * @return the userName
@@ -170,7 +170,7 @@ public class User {
 	//public String getUserName () {
 	//	return this.userName;
 	//}
-	
+
 	/**
 	 * Get the userStatus.
 	 * @return the userStatus
@@ -178,5 +178,5 @@ public class User {
 	public String getUserStatus () {
 		return this.userStatus;
 	}
-	
+
 }

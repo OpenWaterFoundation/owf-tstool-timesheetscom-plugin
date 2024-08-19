@@ -36,20 +36,23 @@ import RTi.TS.TSIdent;
  */
 public class TimeSeriesCatalog {
 
-	// General data, provided by TSTool, extracted/duplicated from timesheets.com services.
+	// General data, provided by TSTool, extracted/duplicated from timesheets.com services:
+	// - use data from the ReportProjectCustomizable unless otherwise noted (e.g., project data)
 	private String locId = "";
 	private String dataInterval = "";
 	private String dataType = "";
-	private String dataUnits = ""; // From either point_type.units_abbreviated or rating_table.units_abbreviated.
-	
+	private String dataUnits = "";
+
 	// Customer data, listed alphabetically.
 	private String customerId = "";
 	private String customerName = "";
-	
+
 	// Project data, listed alphabetically.
+	private Float projectDefaultBillRate = null;  // Looked up from the project.
 	private String projectId = "";
 	private String projectName = "";
 	private String projectStatus = "";  // Looked up from the project.
+	private String projectCreatedDate = "";  // Looked up from the project.
 
 	// User data, listed alphabetically.
 	private String userId = "";
@@ -102,6 +105,8 @@ public class TimeSeriesCatalog {
 		this.customerName = timeSeriesCatalog.customerName;
 
 		// Project data, listed alphabetically.
+		this.projectCreatedDate = timeSeriesCatalog.projectCreatedDate;
+		this.projectDefaultBillRate = timeSeriesCatalog.projectDefaultBillRate;
 		this.projectId = timeSeriesCatalog.projectId;
 		this.projectName = timeSeriesCatalog.projectName;
 		this.projectStatus = timeSeriesCatalog.projectStatus;
@@ -142,19 +147,21 @@ public class TimeSeriesCatalog {
 		this.dataType = "ProjectHours";
 		this.dataInterval = "Day";
 		this.dataUnits = "Hours";
-		
+
 		// Customer data.
 		this.customerId = data.getCustomerId();
 		this.customerName = data.getCustomerName();
-		
+
 		// Project data:
 		// - need to look up status from the projects
 		this.projectId = data.getProjectId();
 		this.projectName = data.getProjectName();
 		if ( project != null ) {
+			this.projectCreatedDate = project.getCreatedDate();
+			this.projectDefaultBillRate = project.getDefaultBillRateAsFloat();
 			this.projectStatus = project.getProjectStatus();
 		}
-		
+
 		// User data.
 		this.userId = data.getUserId();
 		this.userFirstName = data.getFirstName();
@@ -171,7 +178,7 @@ public class TimeSeriesCatalog {
 		}
 		this.problems.add(problem);
 	}
-	
+
 	/**
 	 * Clear the problems.
 	 * @return
@@ -184,7 +191,7 @@ public class TimeSeriesCatalog {
 
 	/**
 	 * Create an index list for TimeSeriesCatalog data list, using stationNumId as the index.
-	 * This is a list of lists, with outermost list being the stationNumId. 
+	 * This is a list of lists, with outermost list being the stationNumId.
 	 * It is assumed that the catalog is sorted by stationNumId, which should be the case
 	 * due to logic in the 'tscatalog' service.
 	 * @param tscatalogList list of TimeSeriesCatalog to create an index for.
@@ -315,14 +322,26 @@ public class TimeSeriesCatalog {
 		return this.customerName;
 	}
 
+	/**
+	 * Return the data interval.
+	 * @return the data interval
+	 */
 	public String getDataInterval ( ) {
 		return this.dataInterval;
 	}
-	
+
+	/**
+	 * Return the data type.
+	 * @return the data type
+	 */
 	public String getDataType ( ) {
 		return this.dataType;
 	}
-	
+
+	/**
+	 * Return the data units.
+	 * @return the data units
+	 */
 	public String getDataUnits ( ) {
 		return this.dataUnits;
 	}
@@ -413,6 +432,14 @@ public class TimeSeriesCatalog {
 	}
 
 	/**
+	 * Return the project created date.
+	 * @return the project created date
+	 */
+	public String getProjectCreatedDate ( ) {
+		return this.projectCreatedDate;
+	}
+
+	/**
 	 * Return the project name.
 	 * @return the project name
 	 */
@@ -426,6 +453,14 @@ public class TimeSeriesCatalog {
 	 */
 	public String getProjectStatus ( ) {
 		return this.projectStatus;
+	}
+
+	/**
+	 * Return the project default billing rate.
+	 * @return the project default billing rate.
+	 */
+	public Float getProjectDefaultBillRate ( ) {
+		return this.projectDefaultBillRate;
 	}
 
 	/**
@@ -455,11 +490,11 @@ public class TimeSeriesCatalog {
 	public void setDataInterval ( String dataInterval ) {
 		this.dataInterval = dataInterval;
 	}
-	
+
 	public void setDataType ( String dataType ) {
 		this.dataType = dataType;
 	}
-	
+
 	public void setDataUnits ( String dataUnits ) {
 		this.dataUnits = dataUnits;
 	}

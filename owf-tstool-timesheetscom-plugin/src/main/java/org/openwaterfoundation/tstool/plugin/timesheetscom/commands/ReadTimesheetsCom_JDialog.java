@@ -99,6 +99,7 @@ private JTextField __InputEnd_JTextField;
 private SimpleJComboBox __IncludeHours_JComboBox = null;
 //private SimpleJComboBox __ProjectStatus_JComboBox = null;
 // Output.
+private SimpleJComboBox __OutputTimeSeries_JComboBox = null;
 private TSFormatSpecifiersJPanel __Alias_JTextField = null;
 private SimpleJComboBox __DataFlag_JComboBox = null;
 private SimpleJComboBox __IfMissing_JComboBox;
@@ -362,10 +363,6 @@ private void checkInput () {
     if ( DataStore.length() > 0 ) {
         props.set ( "DataStore", DataStore );
     }
-	String Alias = __Alias_JTextField.getText().trim();
-	if ( Alias.length() > 0 ) {
-		props.set ( "Alias", Alias );
-	}
 	//String TSID = __TSID_JTextField.getText().trim();
 	//if ( TSID.length() > 0 ) {
 	//	props.set ( "TSID", TSID );
@@ -437,6 +434,14 @@ private void checkInput () {
         	props.set("InputFiltersCheck",ifp.checkInputFilters(false));
         }
     }
+    String OutputTimeSeries = __OutputTimeSeries_JComboBox.getSelected();
+    if ( OutputTimeSeries.length() > 0 ) {
+        props.set ("OutputTimeSeries",OutputTimeSeries);
+    }
+	String Alias = __Alias_JTextField.getText().trim();
+	if ( Alias.length() > 0 ) {
+		props.set ( "Alias", Alias );
+	}
     String DataFlag = __DataFlag_JComboBox.getSelected();
     if ( DataFlag.length() > 0 ) {
         props.set ("DataFlag",DataFlag);
@@ -495,8 +500,6 @@ already been checked and no errors were detected.
 private void commitEdits () {
 	String DataStore = __DataStore_JComboBox.getSelected();
     __command.setCommandParameter ( "DataStore", DataStore );
-	String Alias = __Alias_JTextField.getText().trim();
-	__command.setCommandParameter ( "Alias", Alias );
 	//String TSID = __TSID_JTextField.getText().trim();
 	//__command.setCommandParameter ( "TSID", TSID );
 	String DataType = getSelectedDataType();
@@ -532,6 +535,10 @@ private void commitEdits () {
     __command.setCommandParameter ( "IncludeHours", IncludeHours );
     //String ProjectStatus = __ProjectStatus_JComboBox.getSelected();
     //__command.setCommandParameter ( "ProjectStatus", ProjectStatus );
+    String OutputTimeSeries = __OutputTimeSeries_JComboBox.getSelected();
+    __command.setCommandParameter ( "OutputTimeSeries", OutputTimeSeries );
+	String Alias = __Alias_JTextField.getText().trim();
+	__command.setCommandParameter ( "Alias", Alias );
     String DataFlag = __DataFlag_JComboBox.getSelected();
     __command.setCommandParameter ( "DataFlag", DataFlag );
     String IfMissing = __IfMissing_JComboBox.getSelected();
@@ -938,7 +945,7 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
         0, ++y, 7, 1, 1, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
 
     // Tab for query filters.
-    
+
     JPanel filters_JPanel = new JPanel();
     filters_JPanel.setLayout(new GridBagLayout());
     __main_JTabbedPane.addTab ( "Query Filters", filters_JPanel );
@@ -1007,17 +1014,52 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
         */
 
     // Tab for output.
-    
+
     JPanel output_JPanel = new JPanel();
     output_JPanel.setLayout(new GridBagLayout());
-    __main_JTabbedPane.addTab ( "Output", output_JPanel );
+    __main_JTabbedPane.addTab ( "Output Time Series", output_JPanel );
     int yOutput = -1;
 
     JGUIUtil.addComponent(output_JPanel, new JLabel(
     	"These parameters control time series output."),
         0, ++yOutput, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    if ( this.__dataStore == null ) {
+    	// General message.
+    	JGUIUtil.addComponent(output_JPanel, new JLabel(
+    		"Time series are created from cached data tables, which are refreshed every "
+    		+ TimesheetsComDataStore.DEFAULT_DATA_EXPIRATION_OFFSET + " seconds."),
+        	0, ++yOutput, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    }
+    else {
+    	// More specifics.
+    	JGUIUtil.addComponent(output_JPanel, new JLabel(
+    		"Time series are created from cached data tables, which expire at " +
+    		this.__dataStore.getGlobalDataExpirationOffset() + " and will refresh every " +
+    		TimesheetsComDataStore.DEFAULT_DATA_EXPIRATION_OFFSET + " seconds."),
+        	0, ++yOutput, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    }
+    JGUIUtil.addComponent(output_JPanel, new JLabel(
+    	"Specify OutputTimeSeries=False if only reading output tables (see the Output Tables tab)."),
+        0, ++yOutput, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(output_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
         0, ++yOutput, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
+
+    JGUIUtil.addComponent(output_JPanel, new JLabel ( "Ouput time series?:"),
+		0, ++yOutput, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
+    List<String> OutputTimeSeries_List = new ArrayList<>( 3 );
+	OutputTimeSeries_List.add ( "" );
+	OutputTimeSeries_List.add ( __command._False );
+	OutputTimeSeries_List.add ( __command._True );
+	__OutputTimeSeries_JComboBox = new SimpleJComboBox ( false );
+	__OutputTimeSeries_JComboBox.setToolTipText("Output time series? Specify false if only outputting tables.");
+	__OutputTimeSeries_JComboBox.setData ( OutputTimeSeries_List);
+	__OutputTimeSeries_JComboBox.select ( 0 );
+	__OutputTimeSeries_JComboBox.addActionListener ( this );
+    JGUIUtil.addComponent(output_JPanel, __OutputTimeSeries_JComboBox,
+		1, yOutput, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(output_JPanel, new JLabel (
+		"Optional - output time series (default=" + __command._True + ")."),
+		3, yOutput, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
 
     JGUIUtil.addComponent(output_JPanel, new JLabel("Alias to assign:"),
         0, ++yOutput, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
@@ -1046,7 +1088,7 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
     JGUIUtil.addComponent(output_JPanel, __DataFlag_JComboBox,
         1, yOutput, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(output_JPanel, new JLabel (
-        "Optional - how to handle missing time series (default=" + __command._Warn + ")."),
+        "Optional - how to set the data flag (default=not set)."),
         3, yOutput, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
 
     JGUIUtil.addComponent(output_JPanel, new JLabel ( "If missing:" ),
@@ -1084,7 +1126,7 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
 		3, yOutput, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
 
     // Tab for work notes.
-    
+
     JPanel work_JPanel = new JPanel();
     work_JPanel.setLayout(new GridBagLayout());
     __main_JTabbedPane.addTab ( "Work Notes", work_JPanel );
@@ -1131,7 +1173,7 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
 		3, yWork, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
 
     // Tab for other tabular output.
-    
+
     JPanel table_JPanel = new JPanel();
     table_JPanel.setLayout(new GridBagLayout());
     __main_JTabbedPane.addTab ( "Output Tables", table_JPanel );
@@ -1149,6 +1191,21 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
     JGUIUtil.addComponent(table_JPanel, new JLabel(
     	"- save a copy of the timesheet database as a backup"),
         0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    if ( this.__dataStore == null ) {
+    	// General message.
+    	JGUIUtil.addComponent(table_JPanel, new JLabel(
+    		"Tables are created from cached data tables, which are refreshed every "
+    		+ TimesheetsComDataStore.DEFAULT_DATA_EXPIRATION_OFFSET + " seconds."),
+        	0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    }
+    else {
+    	// More specifics.
+    	JGUIUtil.addComponent(table_JPanel, new JLabel(
+    		"Tables are created from cached data tables, which expire at " +
+    		this.__dataStore.getGlobalDataExpirationOffset() + " and will refresh every " +
+    		TimesheetsComDataStore.DEFAULT_DATA_EXPIRATION_OFFSET + " seconds."),
+        	0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    }
     JGUIUtil.addComponent(table_JPanel, new JLabel(
     	"The list of project time is the complete history and is not limited by query filters."),
         0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
@@ -1184,7 +1241,7 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
 		1, yTable, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(table_JPanel, new JLabel ( "Optional - table ID for projects (default=not output)."),
 		3, yTable, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
-    
+
     JGUIUtil.addComponent(table_JPanel, new JLabel ( "Project time table ID:"),
 		0, ++yTable, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
 	__ProjectTimeTableID_JTextField = new JTextField ( 30 );
@@ -1194,8 +1251,8 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
 		1, yTable, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(table_JPanel, new JLabel ( "Optional - table ID for project time (default=not output)."),
 		3, yTable, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
-    
-    JGUIUtil.addComponent(table_JPanel, new JLabel ( "User time table ID:"),
+
+    JGUIUtil.addComponent(table_JPanel, new JLabel ( "User table ID:"),
 		0, ++yTable, 1, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.EAST);
 	__UserTableID_JTextField = new JTextField ( 30 );
 	__UserTableID_JTextField.setToolTipText("Table identifier for users.");
@@ -1204,7 +1261,7 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
 		1, yTable, 2, 1, 1, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(table_JPanel, new JLabel ( "Optional - table ID for users (default=not output)."),
 		3, yTable, 2, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
-    
+
     // Command text area.
 
     JGUIUtil.addComponent(main_JPanel, new JLabel ( "Command:"),
@@ -1571,7 +1628,6 @@ Refresh the command string from the dialog contents.
 */
 private void refresh () {
 	String routine = getClass().getSimpleName() + ".refresh";
-	String Alias = "";
 	__error_wait = false;
 	String DataStore = "";
 	String DataType = "";
@@ -1585,6 +1641,8 @@ private void refresh () {
 	String InputEnd = "";
 	String IncludeHours = "";
 	//String ProjectStatus = "";
+	String OutputTimeSeries = "";
+	String Alias = "";
 	String DataFlag = "";
     String WorkTableID = "";
     String AppendWorkTable = "";
@@ -1607,11 +1665,12 @@ private void refresh () {
 	    ProjectName = props.getValue ( "ProjectName" );
 	    UserLastName = props.getValue ( "UserLastName" );
 	    UserFirstName = props.getValue ( "UserFirstName" );
-		Alias = props.getValue ( "Alias" );
 		InputStart = props.getValue ( "InputStart" );
 		InputEnd = props.getValue ( "InputEnd" );
 		IncludeHours = props.getValue ( "IncludeHours" );
 		//ProjectStatus = props.getValue ( "ProjectStatus" );
+		OutputTimeSeries = props.getValue ( "OutputTimeSeries" );
+		Alias = props.getValue ( "Alias" );
 		DataFlag = props.getValue ( "DataFlag" );
 		WorkTableID = props.getValue ( "WorkTableID" );
 		AppendWorkTable = props.getValue ( "AppendWorkTable" );
@@ -1791,6 +1850,7 @@ private void refresh () {
 		// Selecting the data type and interval will result in the corresponding filter group being selected.
 		selectInputFilter(getDataStore());
 		InputFilter_JPanel filterPanel = getVisibleInputFilterPanel();
+		//TimesheetsCom_TimeSeries_InputFilter_JPanel filterPanel = (TimesheetsCom_TimeSeries_InputFilter_JPanel)filterPanel0;
 		if ( filterPanel == null ) {
 			Message.printWarning(1, routine, "Trouble finding visible input filter panel for selected TimesheetsCom datastore." );
 		}
@@ -1803,7 +1863,12 @@ private void refresh () {
     				// Set the filter.
     				try {
     				    Message.printStatus(2,routine,"Setting filter Where" + (ifg + 1) + "=\"" + where + "\" from panel " + filterPanel );
-    				    filterPanel.setInputFilter (ifg, where, filterDelim );
+    				    // Use the following to allow ${Property} to be set as a choice.
+    				    boolean setTextIfNoChoicesMatch = false;
+						if ( where.contains("${") ) {
+							setTextIfNoChoicesMatch = true;
+						}
+    				    filterPanel.setInputFilter (ifg, where, filterDelim, setTextIfNoChoicesMatch );
     				}
     				catch ( Exception e ) {
     					Message.printWarning ( 1, routine,
@@ -1865,6 +1930,24 @@ private void refresh () {
             }
         }
         */
+	    if ( JGUIUtil.isSimpleJComboBoxItem( __OutputTimeSeries_JComboBox, OutputTimeSeries, JGUIUtil.NONE, null, null ) ) {
+            //__OutputTimeSeries_JComboBox.select (index[0] );
+            __OutputTimeSeries_JComboBox.select (OutputTimeSeries);
+        }
+        else {
+            Message.printStatus(2,routine,"OutputTimeSeries=\"" + OutputTimeSeries + "\" is invalid.");
+            if ( (OutputTimeSeries == null) || OutputTimeSeries.equals("") ) {
+                // New command...select the default.
+                // Populating the list above selects the default that is appropriate so no need to do here.
+            	__OutputTimeSeries_JComboBox.select (0);
+            }
+            else {
+                // Bad user command.
+                Message.printWarning ( 1, routine, "Existing command references an invalid\n"+
+                  "OutputTimeSeries parameter \"" + Interval + "\".  Select a\ndifferent value or Cancel." );
+            	__OutputTimeSeries_JComboBox.select (0);
+            }
+        }
         if ( DataFlag == null ) {
             // Select default.
             __DataFlag_JComboBox.select ( 0 );
@@ -1973,7 +2056,6 @@ private void refresh () {
     if ( DataStore == null ) {
         DataStore = "";
     }
-	Alias = __Alias_JTextField.getText().trim();
 	CustomerName = __CustomerName_JComboBox.getSelected();
 	ProjectName = __ProjectName_JComboBox.getSelected();
 	UserLastName = __UserLastName_JComboBox.getSelected();
@@ -2048,7 +2130,6 @@ private void refresh () {
 	else {
 		//Message.printStatus(2, routine, "Visible input filter panel is null.");
 	}
-	props.add ( "Alias=" + Alias );
 	InputStart = __InputStart_JTextField.getText().trim();
 	props.add ( "InputStart=" + InputStart );
 	InputEnd = __InputEnd_JTextField.getText().trim();
@@ -2057,6 +2138,10 @@ private void refresh () {
     props.add ( "IncludeHours=" + IncludeHours );
 	//ProjectStatus = __ProjectStatus_JComboBox.getSelected();
 	//props.add ( "ProjectStatus=" + ProjectStatus );
+	Alias = __Alias_JTextField.getText().trim();
+	props.add ( "Alias=" + Alias );
+	OutputTimeSeries = __OutputTimeSeries_JComboBox.getSelected();
+    props.add ( "OutputTimeSeries=" + OutputTimeSeries );
 	DataFlag = __DataFlag_JComboBox.getSelected();
     props.add ( "DataFlag=" + DataFlag );
 	IfMissing = __IfMissing_JComboBox.getSelected();

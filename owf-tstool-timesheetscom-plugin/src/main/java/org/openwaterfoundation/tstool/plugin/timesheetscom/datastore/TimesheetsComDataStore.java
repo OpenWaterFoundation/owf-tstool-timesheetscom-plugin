@@ -121,25 +121,30 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	 * List of all daily time sheet data records from the above.
 	 */
 	List<ReportProjectCustomizableData> allTimesheetData = new ArrayList<>();
-	
+
 	/**
 	 * Expiration time at which global data will be refreshed.
 	 */
 	OffsetDateTime globalDataExpirationTime = null;
 
 	/**
+	 * Default expiration offset.
+	 */
+	public static long DEFAULT_DATA_EXPIRATION_OFFSET = 3600;
+	
+	/**
 	 * Expiration time offset in seconds:
 	 * - the 'globalDataExpirationTime' will be set this far into the future when global data are read
 	 * - don't use a time that is too short because timesheets.com may restrict access due to high retries
 	 */
-	long globalDataExpirationOffset = 3600;
+	long globalDataExpirationOffset = DEFAULT_DATA_EXPIRATION_OFFSET;
 
 	/**
 	 * Global location ID list, used to streamline creating lists for UI choices,
 	 * determined when the tscatalogList is read.
 	 */
 	List<String> locIdList = new ArrayList<>();
-	
+
 	/**
 	 * Global data read problems:
 	 * - if not empty, this should be set as an error in the ReadTimesheetsCom command to indicate incomplete data
@@ -199,7 +204,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 
 	    readGlobalData();
 	}
-	
+
 	/**
 	 * Check global data to evaluate whether it has expired.
 	 * If the global data are expired, read it again.
@@ -509,7 +514,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     			customerNames.add(customerName);
     		}
     	}
-    	
+
     	Collections.sort ( customerNames, String.CASE_INSENSITIVE_ORDER );
     	return customerNames;
     }
@@ -665,7 +670,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     			projectNames.add(projectName);
     		}
     	}
-    	
+
     	Collections.sort ( projectNames, String.CASE_INSENSITIVE_ORDER );
     	return projectNames;
     }
@@ -756,7 +761,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     			userFirstNames.add(userFirstName);
     		}
     	}
-    	
+
     	Collections.sort ( userFirstNames, String.CASE_INSENSITIVE_ORDER );
     	return userFirstNames;
     }
@@ -826,7 +831,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     			userLastNames.add(userLastName);
     		}
     	}
-    	
+
     	Collections.sort ( userLastNames, String.CASE_INSENSITIVE_ORDER );
     	return userLastNames;
     }
@@ -1926,11 +1931,11 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     	boolean readData, HashMap<String,Object> readProperties, DataTable workTable ) throws Exception {
     	// Check whether the global data have expired and reread if necessary.
     	checkGlobalDataExpiration();
-    	
+
     	//String routine = getClass().getSimpleName() + ".readTimeSeries";
 
     	// Get the properties of interest.
-    	
+
     	// Whether to include new and/or archived data.
     	if ( readProperties == null ) {
     		// Create an empty hashmap if necessary to avoid checking for null below.
@@ -2134,7 +2139,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
    				// - don't add to the time series or table below because it is likely a timesheet correction.
    				continue;
    			}
-   			
+
    			archived = data.getArchived();
 
    			// Determine whether to include the data.
@@ -2161,9 +2166,9 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
    			else if ( doFlagArchived1 && archived.equals("1") ) {
    				flag = archived;
    			}
-   			
+
    			// Set the data value.
-   			
+
    			if ( ts.isDataMissing(ts.getDataValue(dt)) ) {
    				// Current time series value is missing:
    				// - set the value
@@ -2183,16 +2188,16 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
    					ts.setDataValue(dt, (value + data.getHoursAsFloat()), flag, -1 );
    				}
    			}
-   			
+
    			// Print a warning if unassigned.
    			if ( isUnassigned ) {
    				Message.printWarning(3, routine, "Have unassigned data for ts \"" + ts.getIdentifierString() +
    					"\" date=" + dt + " value=" + data.getHoursAsFloat() );
    			}
-   			
+
    			// If the work table is not null, add a table record:
    			// - the positions are hard-coded and standard
-   			
+
    			if ( workTable != null ) {
    				try {
    					TableRecord rec = new TableRecord();
@@ -2456,8 +2461,10 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     	ts.setProperty("customerName", tscatalog.getCustomerName());
 
     	// Project properties.
+    	ts.setProperty("projectCreatedDate", tscatalog.getProjectCreatedDate());
     	ts.setProperty("projectId", tscatalog.getProjectId());
     	ts.setProperty("projectName", tscatalog.getProjectName());
+    	ts.setProperty("projectDefaultBillRate", tscatalog.getProjectDefaultBillRate());
 
     	// User properties.
     	ts.setProperty("userFirstName", tscatalog.getUserFirstName());

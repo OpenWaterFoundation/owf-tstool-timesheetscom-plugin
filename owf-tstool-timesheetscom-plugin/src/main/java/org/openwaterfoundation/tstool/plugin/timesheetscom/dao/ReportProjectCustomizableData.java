@@ -225,7 +225,7 @@ public class ReportProjectCustomizableData {
 
 		// Convert hours to float.
 		this.hoursAsFloat = Float.valueOf(this.hours);
-		
+
 		// Convert the project ID to an integer.
 		this.projectIdAsInteger = Integer.valueOf(this.projectId);
 	}
@@ -296,7 +296,7 @@ public class ReportProjectCustomizableData {
 
 	/**
 	 * Return the department.
-	 * @return the department 
+	 * @return the department
 	 */
 	public String getDepartment () {
 		return this.department;
@@ -304,7 +304,7 @@ public class ReportProjectCustomizableData {
 
 	/**
 	 * Return the employee number.
-	 * @return the employee number 
+	 * @return the employee number
 	 */
 	public String getEmployeeNumber () {
 		return this.employeeNumber;
@@ -312,7 +312,7 @@ public class ReportProjectCustomizableData {
 
 	/**
 	 * Return the employee type.
-	 * @return the employee type 
+	 * @return the employee type
 	 */
 	public String getEmployeeType () {
 		return this.employeeType;

@@ -73,7 +73,7 @@ public class TimesheetsCom_TimeSeries_InputFilter_JPanel extends InputFilter_JPa
 	*/
 	public void setFilters ( int numFilterGroups ) {
 		String routine = getClass().getSimpleName() + ".setFilters";
-		
+
 		// Read the data to populate filter choices.
 
 		List<TimeSeriesCatalog> tscatalogList = new ArrayList<>();
@@ -87,7 +87,7 @@ public class TimesheetsCom_TimeSeries_InputFilter_JPanel extends InputFilter_JPa
 			Message.printWarning(2, routine, "Exception reading the timesheets.com time series list");
 			Message.printWarning(2, routine, e);
 		}
-		
+
 		// The internal names for filters match the web service query parameters.
 
 	    List<InputFilter> filters = new ArrayList<>();
@@ -111,10 +111,10 @@ public class TimesheetsCom_TimeSeries_InputFilter_JPanel extends InputFilter_JPa
 
 	    	// Customers.
 	    	customerName = tscatalog.getCustomerName();
-	    	
+
 	    	// Projects.
 	    	projectName = tscatalog.getProjectName();
-	    	
+
 	    	// Users.
 	    	firstName = tscatalog.getUserFirstName();
 	    	lastName = tscatalog.getUserLastName();
@@ -165,10 +165,10 @@ public class TimesheetsCom_TimeSeries_InputFilter_JPanel extends InputFilter_JPa
 	    	}
 
 	    }
-	    
+
 	    // Project status choices:
 	    // - these do not match the tscatlog data and have to be handled specifically
-	    
+
 	    List<String> projectStatusChoices = new ArrayList<>();
 	    projectStatusChoices.add ( "Active" );
 	    projectStatusChoices.add ( "Archived" );
@@ -242,7 +242,7 @@ public class TimesheetsCom_TimeSeries_InputFilter_JPanel extends InputFilter_JPa
             */
 
 	  	setToolTipText("<html>Specify one or more input filters to limit query, will be ANDed.</html>");
-	    
+
 	    int numVisible = 14;
 	    setInputFilters(filters, numFilterGroups, numVisible);
 	}
@@ -254,4 +254,5 @@ public class TimesheetsCom_TimeSeries_InputFilter_JPanel extends InputFilter_JPa
 	public TimesheetsComDataStore getDataStore ( ) {
 	    return this.datastore;
 	}
+
 }

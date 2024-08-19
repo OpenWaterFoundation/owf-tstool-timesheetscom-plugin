@@ -13,7 +13,7 @@ public class TimeSeriesCatalogComparator implements Comparator<TimeSeriesCatalog
 	 */
 	public TimeSeriesCatalogComparator () {
 	}
-	
+
 	/**
 	 * Compare two TimeSeriesCatalog.
 	 * If tscatalogA is < tscatalogB, return -1.

@@ -38,7 +38,7 @@ public class ServerConstants {
 	 */
 	@JsonProperty("data")
 	Map<String,Object> serverConstants = new LinkedHashMap<>();
-	
+
 	/**
 	 * Default constructor used by Jackson.
 	 */

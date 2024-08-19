@@ -9,8 +9,8 @@ This plugin allows timesheet data from [`timesheets.com`](https://timesheets.com
 
 This documentation has been updated for:
 
-*   TSTool version 14.9.5
-*   TSTool TimesheetsCom plugin version 1.1.1
+*   TSTool version 14.9.6
+*   TSTool TimesheetsCom plugin version 1.1.2
 
 ----------------
 

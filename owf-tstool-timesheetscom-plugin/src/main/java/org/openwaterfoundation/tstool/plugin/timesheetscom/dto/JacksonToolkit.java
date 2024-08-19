@@ -44,23 +44,23 @@ import RTi.Util.String.MultiKeyStringDictionary;
  * This toolkit facilitates using Jackson package to translate JSON to/from data access objects.
  */
 public class JacksonToolkit {
-	
+
 	/**
 	 * Global ObjectMapper as part of the Jackson library used
 	 * for serializing and deserializing JSON data to a POJO.
 	 */
 	private ObjectMapper mapper;
-	
+
 	/**
 	 * Jackson Toolkit used for lazy initialization of a singleton class
 	 */
 	private static JacksonToolkit instance;
-	
+
 	private JacksonToolkit() {
 		this.mapper = new ObjectMapper()
 			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 	}
-	
+
 	/**
 	 * Lazy initialization of a singleton class instance
 	 * @return instance of JacksonToolkit class
@@ -91,7 +91,7 @@ public class JacksonToolkit {
 		String requestData = null;
 		return getJsonNodeFromWebServiceUrl ( debug, url, requestProperties, requestData, elements );
 	}
-	
+
 	/**
 	 * Given a url to Web Services this method retrieves the JSON response from
 	 * web services and converts that to a JsonNode from the Jackson Library.
@@ -114,15 +114,15 @@ public class JacksonToolkit {
 		URL request = null;
 		// Local debugging.
 		//debug = false;
-		
+
 		// TODO smalers 219-09-04 this is in HydroBase REST but results in double query of the web service!
 		//if ( !httpResponse200(url) ) {
 			//Message.printWarning(2, routine, "Error: " + url + " returned a 404 error");
 			//return null;
 		//}
-		
+
 		//System.out.println(url);
-		
+
 		// Whether the URL was read OK.
 		boolean didRead = false;
 		int responseCode = -1;
@@ -231,11 +231,11 @@ public class JacksonToolkit {
 			Message.printWarning(2, routine, "IOException (" + e + ").");
 			throw e;
 		}
-		
+
 		if ( !didRead && (responseCode != 200) ) {
 			throw new HttpCodeException("HTTP request had an error (" + responseCode + ").", responseCode );
 		}
-		
+
 		return results;
 	}
 
@@ -263,7 +263,7 @@ public class JacksonToolkit {
 			return false;
 		}
 	}
-	
+
 	/**
 	 * Log the Json tree to the log file.
 	 * @param node JsonNode to format and print to the log file

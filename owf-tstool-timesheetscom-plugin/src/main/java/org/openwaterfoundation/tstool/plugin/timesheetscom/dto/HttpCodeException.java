@@ -5,12 +5,12 @@ package org.openwaterfoundation.tstool.plugin.timesheetscom.dto;
  */
 @SuppressWarnings("serial")
 public class HttpCodeException extends RuntimeException {
-	
+
 	/**
 	 * The HTTP code.
 	 */
 	private int code = -1;
-	
+
 	/**
 	 * Constructor.
 	 * @param message exception message
