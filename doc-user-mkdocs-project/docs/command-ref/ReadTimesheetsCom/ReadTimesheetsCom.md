@@ -25,7 +25,7 @@ for more information about `timesheets.com` web service integration and limitati
 The command is designed to utilize web service query criteria to process large numbers of time series,
 for example to produce real-time information products and perform historical data analysis and quality control.
 
-See also the 
+See also the
 [TSID for TimesheetsCom](../TSID/TSID.md) time series identifier command,
 which reads time series for a single time series.
 
@@ -147,7 +147,7 @@ Command Parameters
 |**Query Filter**|`InputStart`|Start of the period to query, specified as a date/time with a precision that matches the requested data interval.|Read all available data.|
 ||`InputEnd`|End of the period to query, specified as a date/time with a precision that matches the requested data interval.|Read all available data.|
 ||`IncludeHours`|Indicate which timesheet hours to include:<ul><li>`All` - read all data</li><li>`Archived` - only read archived data</li><li>`New` - only read new hours (not archived)</li></ul>|`All`|
-|***Output Time Series***|`OutputTimeSeries`| Whether time series should be output: <ul><li>`False` - use when only tables are being output</li><li>`True` - to output time series</li></ul> | `True` |
+|***Output Time Series***|`OutputTimeSeries`| Whether time series should be output: <ul><li>`False` - use when only tables are being output</li><li>`True` - to the output time series</li></ul> | `True` |
 ||`Alias`|The alias to assign to the time series, as a literal string or using the special formatting characters listed by the command editor.  The alias is an identifier used by other commands to locate time series for processing, as an alternative to the time series identifier (`TSID`).  Because the time series identifier is relatively complex, it is often cleaner to use properties to define the alias, for example customer and user data set as processor or time series properties. |None – alias is not assigned.|
 | | `DataFlag` | Indicate how to set the data flag for time series values:<ul><li>`Archived` - the data `archived` value (`1` = active, `0` = archived)</li><li>`Archived0` - like `Archived`, but only set the flag if the value is `0`</li><li>`Archived1` - like `Archived`, but only set the flag if the value is `1`</li></ul> | No flag is set. |
 | | `IfMissing` | Currently not implemented. | |

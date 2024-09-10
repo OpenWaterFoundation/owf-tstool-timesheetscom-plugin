@@ -7,6 +7,7 @@ See the [TSTool release notes](http://opencdss.state.co.us/tstool/latest/doc-use
 Plugin release notes are listed below.
 The repository issue for release note item is shown where applicable.
 
+*   [Changes in Version 1.1.3](#changes-in-version-113)
 *   [Changes in Version 1.1.2](#changes-in-version-112)
 *   [Changes in Version 1.1.1](#changes-in-version-111)
 *   [Changes in Version 1.1.0](#changes-in-version-110)
@@ -15,12 +16,20 @@ The repository issue for release note item is shown where applicable.
 
 ----------
 
+## Changes in Version 1.1.3 ##
+
+**Maintenance release to improve handling of work notes.**
+
+*   The [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command has been enhanced:
+    +   ![change](change.png) [#14] Change so that the work notes, if output,
+        are constrained to the `InputStart` and `InputEnd`.
+
 ## Changes in Version 1.1.2 ##
 
 **Maintenance release to improve functionity for billing analysis workflows.**
 
 *   The [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command has been enhanced:
-    +   ![bug](bug.png) Fix bug where the `Where` filters were not working correctly.
+    +   ![bug](bug.png) [#13] Fix bug where the `Where` filters were not working correctly.
     +   ![change](change.png) Add the `Alias` parameter to the command editor (previously, was accidentally omitted).
     +   ![change](change.png) Add the `OutputTimeSeries` parameter to control whether time series are output.
         Using `False` allows reading and outputting tables such as user and project list without outputting time series.
