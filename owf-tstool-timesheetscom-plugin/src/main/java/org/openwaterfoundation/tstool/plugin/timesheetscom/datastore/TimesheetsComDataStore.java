@@ -1924,7 +1924,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
      * <li> "DataFlag" - if "Archived" set the data flag to ARCHIVED, if "Archived0", only set if 0, if "Archived1", only set if 1.</li>
      * <li> "ProjectStatus" - "Active" (default), "Archived", or "All" - NOT ENABLED
      * </ul>
-     * @param workTable if null, table to set work notes
+     * @param workTable if null, table to set work notes (records will be limited to 'readStart' and 'readEnd')
      * @return the time series or null if not read
      */
     public TS readTimeSeries ( String tsidReq, DateTime readStart, DateTime readEnd,
@@ -2202,11 +2202,14 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
    				try {
    					TableRecord rec = new TableRecord();
    					// Can use the original DateTime since it won't be changed.
-   					rec.addFieldValue(dt);
-   					rec.addFieldValue(data.getLastName() + ", " + data.getFirstName() );
-   					rec.addFieldValue(Float.valueOf(data.getHoursAsFloat()));
-   					rec.addFieldValue(data.getWorkDescription());
-					workTable.addRecord(rec);
+   					// However, limit to the InputStart and InputEnd used by the time series.
+   					if ( dt.greaterThanOrEqualTo(ts.getDate1()) && dt.lessThanOrEqualTo(ts.getDate2()) ) {
+   						rec.addFieldValue(dt);
+   						rec.addFieldValue(data.getLastName() + ", " + data.getFirstName() );
+   						rec.addFieldValue(Float.valueOf(data.getHoursAsFloat()));
+   						rec.addFieldValue(data.getWorkDescription());
+						workTable.addRecord(rec);
+   					}
    				}
    				catch ( Exception e ) {
    					// Should not happen and could generate a lot of output.

@@ -1138,6 +1138,9 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
     JGUIUtil.addComponent(work_JPanel, new JLabel(
     	"The notes can be output to a table."),
         0, ++yWork, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(work_JPanel, new JLabel(
+    	"The work note dates are limited to the period defined by the input start and input end (see the Query Filters tab)."),
+        0, ++yWork, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(work_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
         0, ++yWork, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
 
