@@ -7,6 +7,7 @@ See the [TSTool release notes](http://opencdss.state.co.us/tstool/latest/doc-use
 Plugin release notes are listed below.
 The repository issue for release note item is shown where applicable.
 
+*   [Changes in Version 1.1.4](#changes-in-version-114)
 *   [Changes in Version 1.1.3](#changes-in-version-113)
 *   [Changes in Version 1.1.2](#changes-in-version-112)
 *   [Changes in Version 1.1.1](#changes-in-version-111)
@@ -15,6 +16,15 @@ The repository issue for release note item is shown where applicable.
 *   [Changes in Version 1.0.0](#changes-in-version-100)
 
 ----------
+
+## Changes in Version 1.1.4 ##
+
+**Maintenance release to respond to API changes.**
+
+*   ![change](change.png) [#15] The `/report/project/customizable` web service changed.
+    These changes caused the project hours query to return zero records.  The plugin has been updated.
+    +   The `ProjectRecordBillableStatus` query parameter changed to `Billable`.
+    +   The `ProjectRecordStatus` query parameter changed to `RecordStatus`.
 
 ## Changes in Version 1.1.3 ##
 
@@ -40,7 +50,7 @@ The repository issue for release note item is shown where applicable.
 **Maintenance release to respond to API changes.**
 
 *   ![change](change.png) [#10] The `/report/project/customizable` web service changed
-    the `AllEmployees` query parameter to `AllUsers`, which caused project hours query to return zero records.
+    the `AllEmployees` query parameter to `AllUsers`, which caused the project hours query to return zero records.
     The plugin has been updated.
 
 ## Changes in Version 1.1.0 ##

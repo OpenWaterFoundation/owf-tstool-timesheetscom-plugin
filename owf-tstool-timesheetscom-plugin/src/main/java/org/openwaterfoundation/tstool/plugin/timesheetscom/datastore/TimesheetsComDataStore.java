@@ -683,6 +683,15 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     public List<ReportProjectCustomizableReportData> getReportProjectCustomizableDataCache () {
     	return this.reportProjectCustomizableReportDataList;
     }
+    
+    /**
+     * Return the number of time series.
+     * This is useful to ensure that th global data were read.
+     * @return the number of time series.
+     */
+    public int getTimeSeriesCount () {
+    	return this.allTimesheetData.size();
+    }
 
 	/**
 	 * Get the unique user first names for the specified data type, interval, customer name, project name,
@@ -1723,10 +1732,14 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 				"&GroupType=Project" +
 				// Include the work description by default.
 				"&IncludeWorkDescription=1" +
-				// For now, don't rely on the billable status.
-				"&ProjectRecordBillableStatus=RECORD_BILLABLE,RECORD_UNBILLABLE" +
-				// All records, including archived.
-				"&ProjectRecordStatus=PROJECTRECORDSTATUS_ALL" +
+				// For now, don't rely on the billable status:
+				// - syntax changed around 2024-09-30
+				//"&ProjectRecordBillableStatus=RECORD_BILLABLE,RECORD_UNBILLABLE" +
+				"&Billable=RECORD_BILLABLE,RECORD_UNBILLABLE" +
+				// All records, including archived:
+				// - syntax changed around 2024-09-30
+				//"&ProjectRecordStatus=PROJECTRECORDSTATUS_ALL" +
+				"&RecordStatus=PROJECTRECORDSTATUS_ALL" +
 				"&ReportType=Detailed" +
 				// For now, don't rely on the signed status.
 				"&Signed=RECORD_UNSIGNED,RECORD_SIGNED";
