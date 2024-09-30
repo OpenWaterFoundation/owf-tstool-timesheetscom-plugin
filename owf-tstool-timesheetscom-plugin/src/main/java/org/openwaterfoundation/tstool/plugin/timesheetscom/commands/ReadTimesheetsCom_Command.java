@@ -1678,11 +1678,21 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 						MessageUtil.formatMessageTag(command_tag,++warning_count), routine, message );
                     	status.addToLog ( commandPhase,
                     		new CommandLogRecord(CommandStatusType.FAILURE,
-                    				message, "Data may not be in database.  See previous messages." ) );
+                    				message, "Data may not be available from web services.  See previous messages." ) );
 				}
                 // Generate an event for listeners.
                 // TOD SAM 2008-08-20 Evaluate whether need here.
                 //notifyCommandProcessorEventListeners(new MissingObjectEvent(DataType + ", " + Interval + filter_panel,this));
+            }
+
+            if ( dataStore.getTimeSeriesCount() == 0 ) {
+            	// This is a serious problem because no data will be available to read.
+				message = "No time series were read from the TimesheetsCom web service for the global data cache.";
+				Message.printWarning ( warning_level,
+					MessageUtil.formatMessageTag(command_tag,++warning_count), routine, message );
+               	status.addToLog ( commandPhase,
+               		new CommandLogRecord(CommandStatusType.FAILURE,
+            			message, "Data may not be available from web services, the configuration may be wrong, or it could be a software problem. See previous messages." ) );
             }
         }
         else if ( commandPhase == CommandPhaseType.DISCOVERY ) {
