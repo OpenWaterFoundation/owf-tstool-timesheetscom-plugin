@@ -356,15 +356,33 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		// Start with the top-level report/project/customizable list and check whether a time series
 		// has been added.
 		Message.printStatus(2, routine, "Processing " + dataList.size() + " time series records into time series catalog.");
+		// Period for the data, used in the catalog list
 		for ( ReportProjectCustomizableData data : dataList ) {
 			if ( data.getHoursAsFloat() > .001 ) {
 				// Don't include zero hours because some project hours may have been zeroed out to correct issues.
-				if ( TimeSeriesCatalog.findForData ( this.tscatalogList, data ) == null ) {
+				TimeSeriesCatalog tscatalog = TimeSeriesCatalog.findForData ( this.tscatalogList, data );
+				if ( tscatalog == null ) {
 					// Time series was not found so add it.
-					this.tscatalogList.add ( new TimeSeriesCatalog ( data, Project.findForProjectId(this.projectList, data.getProjectId()) ) );
+					this.tscatalogList.add (
+						new TimeSeriesCatalog ( data, Project.findForProjectId(this.projectList, data.getProjectId()) ) );
+				}
+				else {
+					// Need to increment the start, end, and period.
+					tscatalog.updateForReportData ( data );
 				}
 			}
 		}
+		
+		// Copy the dates in the catalog to new instances to make sure they are not shared with other code.
+		for ( TimeSeriesCatalog tscatalog : this.tscatalogList ) {
+			if ( tscatalog.getDataStart() != null ) {
+				tscatalog.setDataStart(new DateTime(tscatalog.getDataStart()));
+			}
+			if ( tscatalog.getDataEnd() != null ) {
+				tscatalog.setDataEnd(new DateTime(tscatalog.getDataEnd()));
+			}
+		}
+
 		Message.printStatus(2, routine, "Created " + this.tscatalogList.size() + " time series catalog.");
 	}
 
@@ -2045,7 +2063,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 
 		// Set the time series properties:
 		// - these can then be accessed in workflows using ${ts:Property} syntax
-		setTimeSeriesProperties ( ts, tscatalog );
+		readTimeSeries_SetTimeSeriesProperties ( ts, tscatalog );
 
     	if ( readData ) {
     		// Also read the time series values:
@@ -2110,6 +2128,36 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
    		Collections.sort ( matchedDataList, new ReportProjectCustomizableDataComparator() );
    		return matchedDataList;
    	}
+
+    /**
+     * Set the time series properties from the TimeSeriesCatalog.
+     * @param ts time series to set properties
+     * @param tscatalog time series catalog to get properties
+     */
+    private void readTimeSeries_SetTimeSeriesProperties ( TS ts, TimeSeriesCatalog tscatalog ) {
+    	// Set all the timesheets.com properties that are known for the time series.
+
+    	// Customer properties.
+    	ts.setProperty("customerId", tscatalog.getCustomerId());
+    	ts.setProperty("customerName", tscatalog.getCustomerName());
+
+    	// Project properties.
+    	ts.setProperty("projectCreatedDate", tscatalog.getProjectCreatedDate());
+    	ts.setProperty("projectId", tscatalog.getProjectId());
+    	ts.setProperty("projectName", tscatalog.getProjectName());
+    	ts.setProperty("projectDefaultBillRate", tscatalog.getProjectDefaultBillRate());
+    	ts.setProperty("projectStatus", tscatalog.getProjectStatusAsWord());
+
+    	// User properties.
+    	ts.setProperty("userFirstName", tscatalog.getUserFirstName());
+    	ts.setProperty("userLastName", tscatalog.getUserLastName());
+    	
+    	// Time series properties:
+    	// - not in the original data
+    	ts.setProperty("dataCount", tscatalog.getDataCount());
+    	ts.setProperty("dataEnd", tscatalog.getDataEnd());
+    	ts.setProperty("dataStart", tscatalog.getDataStart());
+    }
 
     /**
      * Transfer the timesheet records to time series.
@@ -2462,29 +2510,6 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
      */
     private String readVersion () {
     	return "";
-    }
-
-    /**
-     * Set the time series properties from the TimeSeriesCatalog.
-     * @param ts time series to set properties
-     * @param tscatalog time series catalog to get properties
-     */
-    private void setTimeSeriesProperties ( TS ts, TimeSeriesCatalog tscatalog ) {
-    	// Set all the timesheets.com properties that are known for the time series.
-
-    	// Customer properties.
-    	ts.setProperty("customerId", tscatalog.getCustomerId());
-    	ts.setProperty("customerName", tscatalog.getCustomerName());
-
-    	// Project properties.
-    	ts.setProperty("projectCreatedDate", tscatalog.getProjectCreatedDate());
-    	ts.setProperty("projectId", tscatalog.getProjectId());
-    	ts.setProperty("projectName", tscatalog.getProjectName());
-    	ts.setProperty("projectDefaultBillRate", tscatalog.getProjectDefaultBillRate());
-
-    	// User properties.
-    	ts.setProperty("userFirstName", tscatalog.getUserFirstName());
-    	ts.setProperty("userLastName", tscatalog.getUserLastName());
     }
 
 }

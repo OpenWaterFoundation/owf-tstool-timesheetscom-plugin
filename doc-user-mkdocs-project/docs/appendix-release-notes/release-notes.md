@@ -7,6 +7,7 @@ See the [TSTool release notes](http://opencdss.state.co.us/tstool/latest/doc-use
 Plugin release notes are listed below.
 The repository issue for release note item is shown where applicable.
 
+*   [Changes in Version 1.1.5](#changes-in-version-115)
 *   [Changes in Version 1.1.4](#changes-in-version-114)
 *   [Changes in Version 1.1.3](#changes-in-version-113)
 *   [Changes in Version 1.1.2](#changes-in-version-112)
@@ -16,6 +17,14 @@ The repository issue for release note item is shown where applicable.
 *   [Changes in Version 1.0.0](#changes-in-version-100)
 
 ----------
+
+## Changes in Version 1.1.5 ##
+
+**Maintenance release to support workflows.**
+
+*   ![change](change.png) [#16] Update time series properties to include:
+    +   `dataStart` and `dataEnd` to indicate the period for data
+    +   `dataCount` the count of hour values > `.001`
 
 ## Changes in Version 1.1.4 ##
 

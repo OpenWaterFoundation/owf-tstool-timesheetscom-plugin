@@ -38,7 +38,7 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 	/**
 	Number of columns in the table model.
 	*/
-	private final int COLUMNS = 15;
+	private final int COLUMNS = 19;
 
 	//public final int COL_LOCATION_ID = 0;
 	public final int COL_LOCID = 0;
@@ -47,15 +47,19 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 	public final int COL_CUSTOMER_NAME = 3;
 	public final int COL_PROJECT_NAME = 4;
 	public final int COL_PROJECT_CREATED_DATE = 5;
-	public final int COL_PROJECT_DEFAULT_BILL_RATE = 6;
-	public final int COL_LAST_NAME = 7;
-	public final int COL_FIRST_NAME = 8;
-	public final int COL_DATA_UNITS = 9;
-	public final int COL_CUSTOMER_ID = 10;
-	public final int COL_PROJECT_ID = 11;
-	public final int COL_USER_ID = 12;
-	public final int COL_PROBLEMS = 13;
-	public final int COL_DATASTORE = 14;
+	public final int COL_PROJECT_STATUS = 6;
+	public final int COL_DATA_START = 7;
+	public final int COL_DATA_END = 8;
+	public final int COL_DATA_COUNT = 9;
+	public final int COL_PROJECT_DEFAULT_BILL_RATE = 10;
+	public final int COL_LAST_NAME = 11;
+	public final int COL_FIRST_NAME = 12;
+	public final int COL_DATA_UNITS = 13;
+	public final int COL_CUSTOMER_ID = 14;
+	public final int COL_PROJECT_ID = 15;
+	public final int COL_USER_ID = 16;
+	public final int COL_PROBLEMS = 17;
+	public final int COL_DATASTORE = 18;
 
 	/**
 	Datastore corresponding to datastore used to retrieve the data.
@@ -121,6 +125,10 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 			case COL_CUSTOMER_NAME: return "Customer Name";
 			case COL_PROJECT_NAME: return "Project Name";
 			case COL_PROJECT_CREATED_DATE: return "Project Created Date";
+			case COL_PROJECT_STATUS: return "Project Status";
+			case COL_DATA_START: return "Data Start";
+			case COL_DATA_END: return "Data End";
+			case COL_DATA_COUNT: return "Data Count";
 			case COL_PROJECT_DEFAULT_BILL_RATE: return "Project Default Bill Rate";
 			case COL_LAST_NAME: return "Last Name";
 			case COL_FIRST_NAME: return "First Name";
@@ -148,6 +156,10 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 	    toolTips[COL_CUSTOMER_NAME] = "Customer name";
 	    toolTips[COL_PROJECT_NAME] = "Project name";
 	    toolTips[COL_PROJECT_CREATED_DATE] = "Project created date";
+	    toolTips[COL_PROJECT_STATUS] = "Project status";
+	    toolTips[COL_DATA_START] = "Data start date";
+	    toolTips[COL_DATA_END] = "Data end date";
+	    toolTips[COL_DATA_COUNT] = "Data count > .001 hours.";
 	    toolTips[COL_PROJECT_DEFAULT_BILL_RATE] = "Project default bill rate";
 	    toolTips[COL_LAST_NAME] = "Last name";
 	    toolTips[COL_FIRST_NAME] = "First name";
@@ -167,17 +179,21 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 	public int[] getColumnWidths() {
 		int[] widths = new int[this.COLUMNS];
 	    widths[COL_LOCID] = 60;
-	    widths[COL_DATA_TYPE] = 20;
+	    widths[COL_DATA_TYPE] = 10;
 	    widths[COL_DATA_INTERVAL] = 6;
 	    //widths[COL_STATISTIC] = 8;
 	    widths[COL_CUSTOMER_NAME] = 25;
 	    widths[COL_PROJECT_NAME] = 45;
 	    widths[COL_PROJECT_CREATED_DATE] = 15;
+	    widths[COL_PROJECT_STATUS] = 10;
+	    widths[COL_DATA_START] = 8;
+	    widths[COL_DATA_END] = 8;
+	    widths[COL_DATA_COUNT] = 8;
 	    widths[COL_PROJECT_DEFAULT_BILL_RATE] = 12;
-	    widths[COL_LAST_NAME] = 15;
-	    widths[COL_FIRST_NAME] = 15;
-	    widths[COL_DATA_UNITS] = 6;
-	    widths[COL_CUSTOMER_ID] = 6;
+	    widths[COL_LAST_NAME] = 8;
+	    widths[COL_FIRST_NAME] = 8;
+	    widths[COL_DATA_UNITS] = 4;
+	    widths[COL_CUSTOMER_ID] = 8;
 	    widths[COL_PROJECT_ID] = 6;
 	    widths[COL_USER_ID] = 6;
 		widths[COL_PROBLEMS] = 30;
@@ -227,6 +243,10 @@ public class TimesheetsCom_TimeSeries_TableModel extends JWorksheet_AbstractRowT
 			case COL_CUSTOMER_NAME: return timeSeriesCatalog.getCustomerName();
 			case COL_PROJECT_NAME: return timeSeriesCatalog.getProjectName();
 			case COL_PROJECT_CREATED_DATE: return timeSeriesCatalog.getProjectCreatedDate();
+			case COL_PROJECT_STATUS: return timeSeriesCatalog.getProjectStatusAsWord();
+			case COL_DATA_START: return timeSeriesCatalog.getDataStart();
+			case COL_DATA_END: return timeSeriesCatalog.getDataEnd();
+			case COL_DATA_COUNT: return timeSeriesCatalog.getDataCount();
 			case COL_PROJECT_DEFAULT_BILL_RATE: return timeSeriesCatalog.getProjectDefaultBillRate();
 			case COL_LAST_NAME: return timeSeriesCatalog.getUserLastName();
 			case COL_FIRST_NAME: return timeSeriesCatalog.getUserFirstName();
