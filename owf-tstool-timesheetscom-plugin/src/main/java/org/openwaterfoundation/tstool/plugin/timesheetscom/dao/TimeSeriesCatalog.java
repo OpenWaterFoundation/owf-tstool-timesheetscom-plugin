@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import RTi.TS.TSIdent;
+import RTi.Util.Time.DateTime;
 
 /**
  * Class to store time series catalog (metadata) for timesheets.com TSTool time series list.
@@ -51,13 +52,18 @@ public class TimeSeriesCatalog {
 	private Float projectDefaultBillRate = null;  // Looked up from the project.
 	private String projectId = "";
 	private String projectName = "";
+	private String projectCreatedDate = "";
 	private String projectStatus = "";  // Looked up from the project.
-	private String projectCreatedDate = "";  // Looked up from the project.
 
 	// User data, listed alphabetically.
 	private String userId = "";
 	private String userFirstName = "";
 	private String userLastName = "";
+	
+	// Time series, not in timesheets.com objects.
+	private DateTime dataStart = null;
+	private DateTime dataEnd = null;
+	private int dataCount = 0;
 
 	// List of problems, one string per issue.
 	private List<String> problems = null; // Initialize to null to save memory ... must check elsewhere when using.
@@ -116,6 +122,11 @@ public class TimeSeriesCatalog {
 		this.userLastName = timeSeriesCatalog.userLastName;
 		this.userId = timeSeriesCatalog.userId;
 
+		// Time series data.
+		this.dataStart = timeSeriesCatalog.dataStart;
+		this.dataEnd = timeSeriesCatalog.dataEnd;
+		this.dataCount = timeSeriesCatalog.dataCount;
+
 		if ( deepCopy ) {
 			// Time series catalog problems.
 			if ( timeSeriesCatalog.problems == null ) {
@@ -136,6 +147,7 @@ public class TimeSeriesCatalog {
 
 	/**
 	 * Constructor for report project customizable record.
+	 * This is called for the first encounter with a unique record (otherwise the data are added to an existing catalog).
 	 * @param data report project customizable data record to add as a time series catalog entry
 	 * @param project the project matching the data
 	 */
@@ -166,6 +178,8 @@ public class TimeSeriesCatalog {
 		this.userId = data.getUserId();
 		this.userFirstName = data.getFirstName();
 		this.userLastName = data.getLastName();
+		
+		// Time series data are set independently because they depend on the full data period.
 	}
 
 	/**
@@ -186,6 +200,33 @@ public class TimeSeriesCatalog {
 	public void clearProblems() {
 		if ( this.problems != null ) {
 			this.problems.clear();
+		}
+	}
+
+	/**
+	 * Add report data.  The data start, end, and count are update.
+	 * @param data a report record
+	 */
+	public void updateForReportData ( ReportProjectCustomizableData data ) {
+		// Check the start.
+		if ( this.dataStart == null ) {
+			this.dataStart = data.getWorkDateAsDateTime();
+		}
+		else if ( data.getWorkDateAsDateTime().lessThan(this.dataStart) ) {
+			this.dataStart = data.getWorkDateAsDateTime();
+		}
+
+		// Check the end.
+		if ( this.dataEnd == null ) {
+			this.dataEnd = data.getWorkDateAsDateTime();
+		}
+		else if ( data.getWorkDateAsDateTime().greaterThan(this.dataEnd) ) {
+			this.dataEnd = data.getWorkDateAsDateTime();
+		}
+		
+		// Increment the data count.
+		if ( data.getHoursAsFloat() > .001 ) {
+			++this.dataCount;
 		}
 	}
 
@@ -323,6 +364,30 @@ public class TimeSeriesCatalog {
 	}
 
 	/**
+	 * Return the data count.
+	 * @return the data count. 
+	 */
+	public int getDataCount ( ) {
+		return this.dataCount;
+	}
+
+	/**
+	 * Return the data end.
+	 * @return the data end. 
+	 */
+	public DateTime getDataEnd ( ) {
+		return this.dataEnd;
+	}
+
+	/**
+	 * Return the data start.
+	 * @return the data start. 
+	 */
+	public DateTime getDataStart ( ) {
+		return this.dataStart;
+	}
+
+	/**
 	 * Return the data interval.
 	 * @return the data interval
 	 */
@@ -448,11 +513,27 @@ public class TimeSeriesCatalog {
 	}
 
 	/**
-	 * Return the project status.
+	 * Return the project status ("1" is active, "0" is archived).
 	 * @return the project status
 	 */
 	public String getProjectStatus ( ) {
 		return this.projectStatus;
+	}
+
+	/**
+	 * Return the project status word ("Active" is active, "Archived" is archived).
+	 * @return the project status as a word.
+	 */
+	public String getProjectStatusAsWord ( ) {
+		if ( this.projectStatus.equals("1") ) {
+			return "Active";
+		}
+		else if ( this.projectStatus.equals("0") ) {
+			return "Archived";
+		}
+		else {
+			return "Unknown";
+		}
 	}
 
 	/**
@@ -487,14 +568,42 @@ public class TimeSeriesCatalog {
 		return this.userLastName;
 	}
 
+	/**
+	 * Set the data last date (for last data).
+	 * @param dataEnd last date for data
+	 */
+	public void setDataEnd ( DateTime dataEnd ) {
+		this.dataEnd = dataEnd;
+	}
+
+	/**
+	 * Set the time series catalog data interval.
+	 * @param dataType time series data interval
+	 */
 	public void setDataInterval ( String dataInterval ) {
 		this.dataInterval = dataInterval;
 	}
 
+	/**
+	 * Set the data start date (for first data).
+	 * @param dataStart first date for data
+	 */
+	public void setDataStart ( DateTime dataStart ) {
+		this.dataStart = dataStart;
+	}
+
+	/**
+	 * Set the time series catalog data type.
+	 * @param dataType time series data type
+	 */
 	public void setDataType ( String dataType ) {
 		this.dataType = dataType;
 	}
 
+	/**
+	 * Set the time series catalog data units.
+	 * @param dataType time series data units
+	 */
 	public void setDataUnits ( String dataUnits ) {
 		this.dataUnits = dataUnits;
 	}
