@@ -1315,10 +1315,12 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 
 	// List for time series results:
 	// - will be added to for one time series read or replaced if a list is read
+	// - if the work table is requested by time series are not output,
+	//   the time series will not be added to the processor time series list at the end
 	List<TS> tslist = new ArrayList<>();
 	try {
         String Alias = parameters.getValue ( "Alias" );
-        if ( outputTimeSeries && (dataStore != null) ) {
+        if ( (outputTimeSeries || doWorkTable) && (dataStore != null) ) {
 			// Have a datastore so try to read.
 			if ( (CustomerName != null) && !CustomerName.isEmpty() ) {
 				// Have single customer name so try to read the single matching time series.
@@ -1460,7 +1462,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
 	                }
 					// Set the filter:
 	                // - will exactly match a choice
-	                // - also allow setting the text in the SimpleJComboBox
+	                // - also allow setting the text in the SimpleJComboBox if a property is detected in the value
 					try {
 						// The following allows setting ${Property} in a choice.
 						boolean setTextIfNoChoiceMatches = false;
@@ -1635,7 +1637,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
         }
 
         if ( !outputTimeSeries ) {
-        	// Put code here to avoid time series processing.
+        	// This may bet he case if work table was requested but no time series output.
         }
         else if ( commandPhase == CommandPhaseType.RUN ) {
         	Message.printStatus ( 2, routine, "Read " + size + " TimesheetsCom web service time series." );
@@ -1697,7 +1699,9 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
         }
         else if ( commandPhase == CommandPhaseType.DISCOVERY ) {
         	// This will typically only be populated when reading a single time series.
-            setDiscoveryTSList ( tslist );
+        	if ( outputTimeSeries ) {
+        		setDiscoveryTSList ( tslist );
+        	}
         }
 
         // Create and save the output tables if requested.

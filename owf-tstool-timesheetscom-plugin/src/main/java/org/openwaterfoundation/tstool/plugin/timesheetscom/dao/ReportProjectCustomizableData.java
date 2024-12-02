@@ -432,13 +432,15 @@ public class ReportProjectCustomizableData {
 
 	/**
 	 * Get the work date as DateTime.
+	 * @return the work date as DateTime
 	 */
 	public DateTime getWorkDateAsDateTime () {
 		return this.workDateTime;
 	}
 
 	/**
-	 * Get the work description.
+	 * Get the work description ("Notes" in the timesheet website).
+	 * @return the work description
 	 */
 	public String getWorkDescription () {
 		return this.workDescription;

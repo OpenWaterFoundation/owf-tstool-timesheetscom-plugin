@@ -777,6 +777,9 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
    	JGUIUtil.addComponent(main_JPanel, new JLabel (
 		"Requests may be constrained by the software to prevent unintended large bulk queries." ),
 		0, ++y, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+   	JGUIUtil.addComponent(main_JPanel, new JLabel (
+		"Work notes and other data tables can also be read." ),
+		0, ++y, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
 
     // Add buttons for the documentation:
     // - the checkGUIState() method checks for and sets the URL in the button's action
@@ -1039,7 +1042,7 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
         	0, ++yOutput, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     }
     JGUIUtil.addComponent(output_JPanel, new JLabel(
-    	"Specify OutputTimeSeries=False if only reading output tables (see the Output Tables tab)."),
+    	"Specify 'OutputTimeSeries=False' if only reading work notes (see the 'Work Notes' tab) or other data tables (see the 'Output Tables' tabs)."),
         0, ++yOutput, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(output_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
         0, ++yOutput, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
@@ -1141,6 +1144,9 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
     JGUIUtil.addComponent(work_JPanel, new JLabel(
     	"The work note dates are limited to the period defined by the input start and input end (see the Query Filters tab)."),
         0, ++yWork, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(work_JPanel, new JLabel(
+    	"Use the 'Output Time Series' tab to set 'Output time series' to false if creating the work table without outputting time series."),
+        0, ++yWork, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(work_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
         0, ++yWork, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);
 
@@ -1211,6 +1217,9 @@ private void initialize ( JFrame parent, ReadTimesheetsCom_Command command, List
     }
     JGUIUtil.addComponent(table_JPanel, new JLabel(
     	"The list of project time is the complete history and is not limited by query filters."),
+        0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
+    JGUIUtil.addComponent(table_JPanel, new JLabel(
+    	"Use the 'Output Time Series' tab to set 'Output time series' to false if creating the work table without outputting time series."),
         0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.NONE, GridBagConstraints.WEST);
     JGUIUtil.addComponent(table_JPanel, new JSeparator(SwingConstants.HORIZONTAL),
         0, ++yTable, 7, 1, 0, 0, insetsTLBR, GridBagConstraints.HORIZONTAL, GridBagConstraints.WEST);

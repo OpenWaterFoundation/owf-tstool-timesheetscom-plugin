@@ -412,20 +412,18 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	/**
  	* Create a work table with standard columns.
  	* @param workTableID identifier for the table to be created
- 	* @return new table with standard columns
+ 	* @return new table with standard columns for work note output
  	*/
 	public DataTable createWorkTable ( String workTableID ) {
     	DataTable table = new DataTable();
     	table.setTableID ( workTableID );
-    	// Currently columns are hand-coded so don't need to handle dynamically.
-    	//int workTableDateColumn =
-    			table.addField(new TableField(TableField.DATA_TYPE_DATETIME, "Date", -1, -1), null);
-    	//int workUserColumn =
-    			table.addField(new TableField(TableField.DATA_TYPE_STRING, "Person", -1, -1), null);
-    	//int workHoursColumn =
-    			table.addField(new TableField(TableField.DATA_TYPE_FLOAT, "Hours", -1, 1), null);
-    	//int workDescriptionColumn =
-    			table.addField(new TableField(TableField.DATA_TYPE_STRING, "Description", -1, -1), null);
+    	// Columns are hard-coded so don't need to handle dynamically (don't give users the option for naming the columns).
+    	table.addField(new TableField(TableField.DATA_TYPE_DATETIME, "Date", -1, -1), null);
+    	table.addField(new TableField(TableField.DATA_TYPE_STRING, "User", -1, -1), null);
+    	table.addField(new TableField(TableField.DATA_TYPE_FLOAT, "Hours", -1, 1), null);
+    	table.addField(new TableField(TableField.DATA_TYPE_STRING, "Project", -1, -1), null);
+    	// Use "Notes" since it matches the timesheets.com UI.
+    	table.addField(new TableField(TableField.DATA_TYPE_STRING, "Notes", -1, -1), null);
     	return table;
 	}
 
@@ -1955,7 +1953,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
      * <li> "DataFlag" - if "Archived" set the data flag to ARCHIVED, if "Archived0", only set if 0, if "Archived1", only set if 1.</li>
      * <li> "ProjectStatus" - "Active" (default), "Archived", or "All" - NOT ENABLED
      * </ul>
-     * @param workTable if null, table to set work notes (records will be limited to 'readStart' and 'readEnd')
+     * @param workTable if not null, table to set work notes (records will be limited to 'readStart' and 'readEnd')
      * @return the time series or null if not read
      */
     public TS readTimeSeries ( String tsidReq, DateTime readStart, DateTime readEnd,
@@ -2268,6 +2266,8 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
    						rec.addFieldValue(dt);
    						rec.addFieldValue(data.getLastName() + ", " + data.getFirstName() );
    						rec.addFieldValue(Float.valueOf(data.getHoursAsFloat()));
+   						// Project name may be removed from some output later if not needed.
+   						rec.addFieldValue(data.getProjectName());
    						rec.addFieldValue(data.getWorkDescription());
 						workTable.addRecord(rec);
    					}
