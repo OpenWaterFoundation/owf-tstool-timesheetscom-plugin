@@ -1,6 +1,9 @@
 # TSTool / Command / ReadTimesheetsCom #
 
 *   [Overview](#overview)
+    +   [Time Series](#time-series)
+    +   [Work Notes](#work-notes)
+    +   [Other Data Tables](#other-data-tables)
 *   [Command Editor](#command-editor)
     +   [Match Single Time Series](#match-single-time-series)
     +   [Match 1+ Time Series](#match-1-time-series)
@@ -15,13 +18,17 @@
 
 ## Overview ##
 
+The `ReadTimesheetsCom` command reads time series, work notes, and other data tables using the Timesheets.com API.
+See the [TimesheetsCom Data Web Services Appendix](../../datastore-ref/TimesheetsCom/TimesheetsCom.md)
+for more information about `timesheets.com` web service integration and limitations.
+
+### Time Series ###
+
 The `ReadTimesheetsCom` command reads one or more time series from `timesheets.com` web services:
 
 *   Read a single time series by matching a TSTool time series identifier (TSID).
 *   Read 1+ time series using filters similar to the main TSTool window.
 
-See the [TimesheetsCom Data Web Services Appendix](../../datastore-ref/TimesheetsCom/TimesheetsCom.md)
-for more information about `timesheets.com` web service integration and limitations.
 The command is designed to utilize web service query criteria to process large numbers of time series,
 for example to produce real-time information products and perform historical data analysis and quality control.
 
@@ -48,6 +55,34 @@ These properties can be transferred to a table with the
 command and processed further with other table commands.
 
 All time series use `Day` interval, with values being the number of hours worked in a day for a project.
+
+### Work Notes ###
+
+Time series are created from timesheet records, with the time series values being project work hours.
+It is also useful to see the work notes that are entered in timesheets.
+The work notes are NOT saved in time series but can be output separately for the following cases:
+
+1.  Read time series (`OutputTimeSeries=True`, which is the default case)
+    and also output the work notes (specify the `WorkTableID` parameter):
+    *   timesheet data are read using query parameters for the time series
+    *   the time series **will** be listed in the TSTool ***Results / Time Series***
+    *   the work notes table **will** be listed in the TSTool ***Results / Tables***
+2.  Do Read time series (`OutputTimeSeries=False`) but output the work notes (specify the `WorkTableID` parameter):
+    *   timesheet data are read using query parameters for the time series
+    *   the time series **will not** be listed in the TSTool ***Results / Time Series***
+    *   the work notes table **will** be listed in the TSTool ***Results / Tables***
+
+The work notes table includes basic information.
+Additional columns may be added in the future.
+If necessary, use the [`DeleteTableRows`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/DeleteTableRows/DeleteTableRows/)
+command to remove unnecessary table columns.
+
+### Other Data Tables ###
+
+The command can also be used to read other data tables,
+including account codes, customers, projects, project time data, and users.
+These tables can then be used as input to workflows.
+Use the `OutputTimeSeries` command parameter to control whether or not time series are also read while reading the data tables.
 
 ## Command Editor ##
 
@@ -147,7 +182,7 @@ Command Parameters
 |**Query Filter**|`InputStart`|Start of the period to query, specified as a date/time with a precision that matches the requested data interval.|Read all available data.|
 ||`InputEnd`|End of the period to query, specified as a date/time with a precision that matches the requested data interval.|Read all available data.|
 ||`IncludeHours`|Indicate which timesheet hours to include:<ul><li>`All` - read all data</li><li>`Archived` - only read archived data</li><li>`New` - only read new hours (not archived)</li></ul>|`All`|
-|***Output Time Series***|`OutputTimeSeries`| Whether time series should be output: <ul><li>`False` - use when only tables are being output</li><li>`True` - to the output time series</li></ul> | `True` |
+|***Output Time Series***|`OutputTimeSeries`| Whether time series should be output: <ul><li>`False` - use when only the work notes table or other tables are being output</li><li>`True` - to the output time series</li></ul> | `True` |
 ||`Alias`|The alias to assign to the time series, as a literal string or using the special formatting characters listed by the command editor.  The alias is an identifier used by other commands to locate time series for processing, as an alternative to the time series identifier (`TSID`).  Because the time series identifier is relatively complex, it is often cleaner to use properties to define the alias, for example customer and user data set as processor or time series properties. |None – alias is not assigned.|
 | | `DataFlag` | Indicate how to set the data flag for time series values:<ul><li>`Archived` - the data `archived` value (`1` = active, `0` = archived)</li><li>`Archived0` - like `Archived`, but only set the flag if the value is `0`</li><li>`Archived1` - like `Archived`, but only set the flag if the value is `1`</li></ul> | No flag is set. |
 | | `IfMissing` | Currently not implemented. | |
@@ -226,6 +261,7 @@ If the command pauses while running:
 ## See Also ##
 
 *   [`CopyTimeSeriesPropertiesToTable`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/CopyTimeSeriesPropertiesToTable/CopyTimeSeriesPropertiesToTable/) command
+*   [`DeleteTableRows`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/DeleteTableRows/DeleteTableRows/) command
 *   [`ReadTimeSeries`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/ReadTimeSeries/ReadTimeSeries/) command
 *   [TSID for TimesheetsCom](../TSID/TSID.md) command
 *   [`WebGet`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/WebGet/WebGet/) command

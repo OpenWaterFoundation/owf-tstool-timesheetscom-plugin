@@ -7,6 +7,7 @@ See the [TSTool release notes](http://opencdss.state.co.us/tstool/latest/doc-use
 Plugin release notes are listed below.
 The repository issue for release note item is shown where applicable.
 
+*   [Changes in Version 1.1.6](#changes-in-version-116)
 *   [Changes in Version 1.1.5](#changes-in-version-115)
 *   [Changes in Version 1.1.4](#changes-in-version-114)
 *   [Changes in Version 1.1.3](#changes-in-version-113)
@@ -17,6 +18,17 @@ The repository issue for release note item is shown where applicable.
 *   [Changes in Version 1.0.0](#changes-in-version-100)
 
 ----------
+
+## Changes in Version 1.1.6 ##
+
+**Maintenance release to support workflows.**
+
+*   ![change](change.png) [#17] Update the [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md)
+    command:
+    +    Allow the work notes table to be created without outputting time series.
+    +    Add the `Project` to the work notes table.
+    +    Change work notes `Person` to `User` to match Timesheets.com naming.
+    +    Change work notes `Description` to `Notes`.
 
 ## Changes in Version 1.1.5 ##
 
@@ -39,7 +51,7 @@ The repository issue for release note item is shown where applicable.
 
 **Maintenance release to improve handling of work notes.**
 
-*   The [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command has been enhanced:
+*   Update the [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command:
     +   ![change](change.png) [#14] Change so that the work notes, if output,
         are constrained to the `InputStart` and `InputEnd`.
 
@@ -47,7 +59,7 @@ The repository issue for release note item is shown where applicable.
 
 **Maintenance release to improve functionity for billing analysis workflows.**
 
-*   The [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command has been enhanced:
+*   Update the [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command:
     +   ![bug](bug.png) [#13] Fix bug where the `Where` filters were not working correctly.
     +   ![change](change.png) Add the `Alias` parameter to the command editor (previously, was accidentally omitted).
     +   ![change](change.png) Add the `OutputTimeSeries` parameter to control whether time series are output.
@@ -74,7 +86,7 @@ The repository issue for release note item is shown where applicable.
     which allows filtering time series by whether active or archived.
     This is implemented in the main query area and the
     [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command.
-*   ![change](change.png) The [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command has been enhanced:
+*   ![change](change.png) Update the [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command:
     +   [#6] Command parameters have been added to save the global data cache,
         which is useful to allow processing the tables, archiving backups, etc.:
         -   `AccountCodeTableID`
