@@ -7,6 +7,7 @@ See the [TSTool release notes](http://opencdss.state.co.us/tstool/latest/doc-use
 Plugin release notes are listed below.
 The repository issue for release note item is shown where applicable.
 
+*   [Changes in Version 1.1.7](#changes-in-version-117)
 *   [Changes in Version 1.1.6](#changes-in-version-116)
 *   [Changes in Version 1.1.5](#changes-in-version-115)
 *   [Changes in Version 1.1.4](#changes-in-version-114)
@@ -18,6 +19,15 @@ The repository issue for release note item is shown where applicable.
 *   [Changes in Version 1.0.0](#changes-in-version-100)
 
 ----------
+
+## Changes in Version 1.1.7 ##
+
+**Maintenance release to improve command editor.**
+
+*   ![change](change.png) [#18] Update the [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md)
+    command:
+    +   Fix the editor to show `${Property}` values in choices for customer, project, user last and first name.
+        User-supplied values are shown in addition to matching timesheet data.    
 
 ## Changes in Version 1.1.6 ##
 

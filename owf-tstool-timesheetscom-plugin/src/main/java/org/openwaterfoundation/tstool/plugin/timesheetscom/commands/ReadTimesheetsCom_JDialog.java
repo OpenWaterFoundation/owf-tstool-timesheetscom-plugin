@@ -1498,8 +1498,14 @@ private void populateProjectNameChoices ( TimesheetsComDataStore datastore, Stri
 	if ( datastore == null ) {
 		return;
 	}
+	String selectedCustomerName = getSelectedCustomerName();
+	if ( selectedCustomerName.contains("${") ) {
+		// If the selected customer is a property, don't pass it as the 'selectedCustomerName' so all projects will be returned.
+		// The property will also be inserted in the top of the list.
+		selectedCustomerName = null;
+	}
     List<String> projectNames0 = datastore.getProjectNamesForDataTypeAndIntervalAndCustomerName (
-    	getSelectedDataType(), getSelectedInterval(), getSelectedCustomerName() );
+    	getSelectedDataType(), getSelectedInterval(), selectedCustomerName );
     // Make a copy since adding a blank.
     List<String> projectNames = new ArrayList<>();
     for ( String projectName0 : projectNames0 ) {
@@ -1508,7 +1514,7 @@ private void populateProjectNameChoices ( TimesheetsComDataStore datastore, Stri
     // Add a blank because multiple time series tab might be used.
     projectNames.add(0,"");
     if ( (projectName != null) && !projectName.isEmpty() && projectName.contains("${")  ) {
-    	// Insert the given choice.
+    	// Insert the given choice at the top.
     	projectNames.add(1,projectName);
     }
     __ProjectName_JComboBox.setData ( projectNames );
@@ -1529,10 +1535,28 @@ private void populateUserFirstNameChoices ( TimesheetsComDataStore datastore, St
 	if ( datastore == null ) {
 		return;
 	}
+	String selectedCustomerName = getSelectedCustomerName();
+	if ( selectedCustomerName.contains("${") ) {
+		// If the selected customer is a property, don't pass it as the 'selectedCustomerName' so all user names will be returned.
+		// The property will also be inserted in the top of the list.
+		selectedCustomerName = null;
+	}
+	String selectedProjectName = getSelectedProjectName();
+	if ( selectedProjectName.contains("${") ) {
+		// If the selected project name is a property, don't pass it as the 'selectedProjectName' so all user names will be returned.
+		// The property will also be inserted in the top of the list.
+		selectedProjectName = null;
+	}
+	String selectedUserLastName = getSelectedUserLastName();
+	if ( selectedUserLastName.contains("${") ) {
+		// If the selected user last name is a property, don't pass it as the 'selectedUserLastName' so all user names will be returned.
+		// The property will also be inserted in the top of the list.
+		selectedUserLastName = null;
+	}
     List<String> userFirstNames0 =
     	datastore.getUserFirstNamesForDataTypeAndIntervalAndCustomerNameAndProjectNameAndUserLastName (
-    	getSelectedDataType(), getSelectedInterval(), getSelectedCustomerName(), getSelectedProjectName(),
-    	getSelectedUserLastName() );
+    	getSelectedDataType(), getSelectedInterval(), selectedCustomerName, selectedProjectName,
+    	selectedUserLastName );
     // Make a copy since adding a blank.
     List<String> userFirstNames = new ArrayList<>();
     for ( String userFirstName0 : userFirstNames0 ) {
@@ -1562,8 +1586,20 @@ private void populateUserLastNameChoices ( TimesheetsComDataStore datastore, Str
 	if ( datastore == null ) {
 		return;
 	}
+	String selectedCustomerName = getSelectedCustomerName();
+	if ( selectedCustomerName.contains("${") ) {
+		// If the selected customer is a property, don't pass it as the 'selectedCustomerName' so all user names will be returned.
+		// The property will also be inserted in the top of the list.
+		selectedCustomerName = null;
+	}
+	String selectedProjectName = getSelectedProjectName();
+	if ( selectedProjectName.contains("${") ) {
+		// If the selected project name is a property, don't pass it as the 'selectedProjectName' so all user names will be returned.
+		// The property will also be inserted in the top of the list.
+		selectedProjectName = null;
+	}
     List<String> userLastNames0 = datastore.getUserLastNamesForDataTypeAndIntervalAndCustomerNameAndProjectName (
-    	getSelectedDataType(), getSelectedInterval(), getSelectedCustomerName(), getSelectedProjectName() );
+    	getSelectedDataType(), getSelectedInterval(), selectedCustomerName, selectedProjectName );
     // Make a copy since adding a blank.
     List<String> userLastNames = new ArrayList<>();
     for ( String userLastName0 : userLastNames0 ) {
