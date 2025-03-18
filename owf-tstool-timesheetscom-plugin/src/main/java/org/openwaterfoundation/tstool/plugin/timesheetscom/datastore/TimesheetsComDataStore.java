@@ -1,9 +1,9 @@
-// TimesheetsDataStore - class that implements the timesheetscom plugin datastore
+// TimesheetsComDataStore - class that implements the timesheetscom plugin datastore
 
 /* NoticeStart
 
 OWF TSTool timeshetscom Plugin
-Copyright (C) 2023 Open Water Foundation
+Copyright (C) 2023-2025 Open Water Foundation
 
 OWF TSTool timesheetscom Plugin is free software:  you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -131,7 +131,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	 * Default expiration offset.
 	 */
 	public static long DEFAULT_DATA_EXPIRATION_OFFSET = 3600;
-	
+
 	/**
 	 * Expiration time offset in seconds:
 	 * - the 'globalDataExpirationTime' will be set this far into the future when global data are read
@@ -372,7 +372,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 				}
 			}
 		}
-		
+
 		// Copy the dates in the catalog to new instances to make sure they are not shared with other code.
 		for ( TimeSeriesCatalog tscatalog : this.tscatalogList ) {
 			if ( tscatalog.getDataStart() != null ) {
@@ -699,10 +699,10 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     public List<ReportProjectCustomizableReportData> getReportProjectCustomizableDataCache () {
     	return this.reportProjectCustomizableReportDataList;
     }
-    
+
     /**
      * Return the number of time series.
-     * This is useful to ensure that th global data were read.
+     * This is useful to ensure that the global data were read.
      * @return the number of time series.
      */
     public int getTimeSeriesCount () {
@@ -2149,7 +2149,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     	// User properties.
     	ts.setProperty("userFirstName", tscatalog.getUserFirstName());
     	ts.setProperty("userLastName", tscatalog.getUserLastName());
-    	
+
     	// Time series properties:
     	// - not in the original data
     	ts.setProperty("dataCount", tscatalog.getDataCount());

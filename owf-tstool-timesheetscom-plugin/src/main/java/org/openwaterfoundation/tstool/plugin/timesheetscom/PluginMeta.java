@@ -1,9 +1,9 @@
-// PluginMetadata - metadata for the TSTool tmesheetscom plugin
+// PluginMetadata - metadata for the TSTool timesheetscom plugin
 
 /* NoticeStart
 
 OWF TSTool timesheetscom Plugin
-Copyright (C) 2023 Open Water Foundation
+Copyright (C) 2023-2025 Open Water Foundation
 
 OWF TSTool timesheetscom Plugin is free software:  you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ public class PluginMeta {
 	/**
 	 * Plugin version.
 	 */
-	public static final String VERSION = "1.1.6 (2024-12-01)";
+	public static final String VERSION = "1.1.7 (2024-12-02)";
 
 	/**
 	 * Get the documentation root URL, used for command help.
