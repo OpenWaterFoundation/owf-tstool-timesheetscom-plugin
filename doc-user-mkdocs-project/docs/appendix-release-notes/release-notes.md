@@ -2,25 +2,56 @@
 
 Release notes are available for the core TSTool product and plugin.
 The core software and plugins are maintained separately and may be updated at different times.
-See the [TSTool release notes](http://opencdss.state.co.us/tstool/latest/doc-user/appendix-release-notes/release-notes/).
+
+*   [TSTool core product release notes](http://opencdss.state.co.us/tstool/latest/doc-user/appendix-release-notes/release-notes/).
+*   [TSTool Version Compatibility](#tstool-version-compatibility)
+*   [Release Note Details](#release-note-details)
+
+----
+
+## TSTool Version Compatibility ##
+
+The following table lists TSTool and plugin software version compatibility.
+
+**<p style="text-align: center;">
+TSTool and Plugin Version Compatibility
+</p>**
+
+| **Plugin Version** | **Required TSTool Version** | **Comments** |
+| -- | -- | -- |
+| 2.0.0 | >=  15.0.0 | TSTool and plugin updated to Java 11, new plugin manager. |
+| < 2.0.0 | >= 14.6.0 | |
+
+## Release Note Details ##
 
 Plugin release notes are listed below.
 The repository issue for release note item is shown where applicable.
 
-*   [Changes in Version 1.1.7](#changes-in-version-117)
-*   [Changes in Version 1.1.6](#changes-in-version-116)
-*   [Changes in Version 1.1.5](#changes-in-version-115)
-*   [Changes in Version 1.1.4](#changes-in-version-114)
-*   [Changes in Version 1.1.3](#changes-in-version-113)
-*   [Changes in Version 1.1.2](#changes-in-version-112)
-*   [Changes in Version 1.1.1](#changes-in-version-111)
-*   [Changes in Version 1.1.0](#changes-in-version-110)
-*   [Changes in Version 1.0.1](#changes-in-version-101)
-*   [Changes in Version 1.0.0](#changes-in-version-100)
+*   [Version 2.0.0](#version-200)
+*   [Version 1.1.7](#version-117)
+*   [Version 1.1.6](#version-116)
+*   [Version 1.1.5](#version-115)
+*   [Version 1.1.4](#version-114)
+*   [Version 1.1.3](#version-113)
+*   [Version 1.1.2](#version-112)
+*   [Version 1.1.1](#version-111)
+*   [Version 1.1.0](#version-110)
+*   [Version 1.0.1](#version-101)
+*   [Version 1.0.0](#version-100)
 
 ----------
 
-## Changes in Version 1.1.7 ##
+## Version 2.0.0 ##
+
+**Major release to use Java 11.**
+
+*   ![change](change.png) Update the plugin to use Java 11:
+    +   The Java version is consistent with TSTool 15.0.0.
+    *   The plugin installation now uses a version folder,
+        which allows multiple versions of the plugin to be installed at the same time,
+        for use with different versions of TSTool.
+
+## Version 1.1.7 ##
 
 **Maintenance release to improve command editor.**
 
@@ -29,7 +60,7 @@ The repository issue for release note item is shown where applicable.
     +   Fix the editor to show `${Property}` values in choices for customer, project, user last and first name.
         User-supplied values are shown in addition to matching timesheet data.    
 
-## Changes in Version 1.1.6 ##
+## Version 1.1.6 ##
 
 **Maintenance release to support workflows.**
 
@@ -40,7 +71,7 @@ The repository issue for release note item is shown where applicable.
     +    Change work notes `Person` to `User` to match Timesheets.com naming.
     +    Change work notes `Description` to `Notes`.
 
-## Changes in Version 1.1.5 ##
+## Version 1.1.5 ##
 
 **Maintenance release to support workflows.**
 
@@ -48,7 +79,7 @@ The repository issue for release note item is shown where applicable.
     +   `dataStart` and `dataEnd` to indicate the period for data
     +   `dataCount` the count of hour values > `.001`
 
-## Changes in Version 1.1.4 ##
+## Version 1.1.4 ##
 
 **Maintenance release to respond to API changes.**
 
@@ -57,7 +88,7 @@ The repository issue for release note item is shown where applicable.
     +   The `ProjectRecordBillableStatus` query parameter changed to `Billable`.
     +   The `ProjectRecordStatus` query parameter changed to `RecordStatus`.
 
-## Changes in Version 1.1.3 ##
+## Version 1.1.3 ##
 
 **Maintenance release to improve handling of work notes.**
 
@@ -65,7 +96,7 @@ The repository issue for release note item is shown where applicable.
     +   ![change](change.png) [#14] Change so that the work notes, if output,
         are constrained to the `InputStart` and `InputEnd`.
 
-## Changes in Version 1.1.2 ##
+## Version 1.1.2 ##
 
 **Maintenance release to improve functionity for billing analysis workflows.**
 
@@ -76,7 +107,7 @@ The repository issue for release note item is shown where applicable.
         Using `False` allows reading and outputting tables such as user and project list without outputting time series.
     +   ![change](change.png) Add the project default billing rate and created date to the time series catalog and set as time series properties.
 
-## Changes in Version 1.1.1 ##
+## Version 1.1.1 ##
 
 **Maintenance release to respond to API changes.**
 
@@ -84,7 +115,7 @@ The repository issue for release note item is shown where applicable.
     the `AllEmployees` query parameter to `AllUsers`, which caused the project hours query to return zero records.
     The plugin has been updated.
 
-## Changes in Version 1.1.0 ##
+## Version 1.1.0 ##
 
 **Feature release to improve error-handling, data caching, and data checks.**
 
@@ -117,14 +148,14 @@ The repository issue for release note item is shown where applicable.
         which can be used if the limit has been increased for the account by `timesheets.com`.
         This will increase the performance.
 
-## Changes in Version 1.0.1 ##
+## Version 1.0.1 ##
 
 **Maintenance release to improve performance.**
 
 *   ![change](change.png) [#1] Update to automatically refresh cached data after an hour
     to ensure that current data are available.
 
-## Changes in Version 1.0.0 ##
+## Version 1.0.0 ##
 
 **Feature release - initial production release.**
 

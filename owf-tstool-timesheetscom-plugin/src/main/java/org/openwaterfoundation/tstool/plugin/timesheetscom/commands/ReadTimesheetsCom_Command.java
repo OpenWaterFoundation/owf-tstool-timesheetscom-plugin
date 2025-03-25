@@ -3,7 +3,7 @@
 /* NoticeStart
 
 OWF TSTool timesheetscom Plugin
-Copyright (C) 2023-2024 Open Water Foundation
+Copyright (C) 2023-2025 Open Water Foundation
 
 OWF TSTool timesheetscom Plugin is free software:  you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -846,7 +846,7 @@ private DataTable createUserTable ( TimesheetsComDataStore dataStore, String use
 private HashMap<String,Object> createReadProperties ( boolean debug, String dataFlag, String includeHours ) { //, String projectStatus ) {
 	HashMap<String,Object> readProperties = new HashMap<>();
 	if ( debug ) {
-		readProperties.put("Debug", new Boolean(true) );
+		readProperties.put("Debug", Boolean.TRUE );
 	}
 	if ( (dataFlag != null) && !dataFlag.isEmpty() ) {
 		readProperties.put("DataFlag", dataFlag );
@@ -1032,7 +1032,7 @@ throws InvalidCommandParameterException, CommandWarningException, CommandExcepti
     CommandStatus status = getCommandStatus();
     status.clearLog(commandPhase);
 
-    Boolean clearStatus = new Boolean(true); // Default.
+    Boolean clearStatus = Boolean.TRUE; // Default.
     try {
     	Object o = processor.getPropContents("CommandsShouldClearRunStatus");
     	if ( o != null ) {
