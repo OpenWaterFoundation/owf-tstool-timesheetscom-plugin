@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Create the plugin jar file for installation in the deployed system
+# Create the plugin jar file for installation in the deployed system:
 # - the class files and manifest are jar'ed up
 # - the resulting Jar file is created in the user's (developer's)
 #   folder consistent with the TSTool plugins folder:
@@ -74,24 +74,25 @@ configureEcho() {
 # For example, TSTool may be run headless on a server to output to CGI,
 # where stdout formatting is important.
 echoStderr() {
-  ${echo2} "$@" >&2
+  ${echo2} "$@" 1>&2
 }
 
-# Get the plugin version (e.g., 1.2.0)
+# Get the plugin version (e.g., 1.2.0):
 # - the version is printed to stdout so assign function output to a variable
 getPluginVersion() {
   # Maven folder structure results in duplicate 'owf-tstool-timesheetscom-plugin'?
   # TODO smalers 2022-05-19 need to enable this.
   srcFile="${repoFolder}/owf-tstool-timesheetscom-plugin/src/main/java/org/openwaterfoundation/tstool/plugin/timesheetscom/PluginMeta.java"  
   # Get the version from the code line like:
-  #  public static final String VERSION = "1.0.0 (2022-05-27)";
+  #   public static final String VERSION = "1.0.0 (2022-05-27)";
   if [ -f "${srcFile}" ]; then
     cat ${srcFile} | grep 'VERSION =' | cut -d '"' -f 2 | cut -d ' ' -f 1 | tr -d '"' | tr -d ' '
   else
     # Don't echo error to stdout.
     echoStderr "[ERROR] Source file with version does not exist:"
     echoStderr "[ERROR]   ${srcFile}"
-    cat ""
+    # Output an empty string as the version.
+    echo ""
   fi
 }
 
@@ -145,7 +146,9 @@ tstoolMainRepoFolder=${gitReposFolder}/cdss-app-tstool-main
 #mavenProjectFolder=${repoFolder}/owf-tstool-timesheetscom-plugin
 #mavenPomFile=${mavenProjectFolder}/pom.xml
 
-# Get the plugin version, which is used in the jar file name.
+# Get the plugin version:
+# - get the version from the plugin's 'PluginMeta' source folder
+# - the version is used in the jar file name
 pluginVersion=$(getPluginVersion)
 if [ -z "${pluginVersion}" ]; then
   echoStderr "${errorColor}[ERROR] Unable to determine plugin version.${endColor}"
@@ -179,6 +182,7 @@ mainPluginFolder="${pluginsFolder}/owf-tstool-timesheetscom-plugin"
 # Version installed folder for the plugin.
 versionPluginFolder="${mainPluginFolder}/${pluginVersion}"
 
+# Plugin jar file.
 jarFile="${versionPluginFolder}/owf-tstool-timesheetscom-plugin-${pluginVersion}.jar"
 manifestFile="${repoFolder}/owf-tstool-timesheetscom-plugin/src/main/resources/META-INF/MANIFEST.MF"
 

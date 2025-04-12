@@ -3,7 +3,7 @@
 Release notes are available for the core TSTool product and plugin.
 The core software and plugins are maintained separately and may be updated at different times.
 
-*   [TSTool core product release notes](http://opencdss.state.co.us/tstool/latest/doc-user/appendix-release-notes/release-notes/).
+*   [TSTool core product release notes](http://opencdss.state.co.us/tstool/latest/doc-user/appendix-release-notes/release-notes/)
 *   [TSTool Version Compatibility](#tstool-version-compatibility)
 *   [Release Note Details](#release-note-details)
 
