@@ -44,14 +44,14 @@ configureEcho() {
   testEcho=$(echo -e test)
   if [ "${testEcho}" = '-e test' ]; then
     # The -e option did not work as intended:
-    # -using the normal /bin/echo should work
-    # -printf is also an option
+    # - using the normal /bin/echo should work
+    # - printf is also an option
     echo2='/bin/echo -e'
-    # The following does not seem to work
+    # The following does not seem to work.
     #echo2='printf'
   fi
 
-  # Strings to change colors on output, to make it easier to indicate when actions are needed
+  # Strings to change colors on output, to make it easier to indicate when actions are needed:
   # - Colors in Git Bash:  https://stackoverflow.com/questions/21243172/how-to-change-rgb-colors-in-git-bash-for-windows
   # - Useful info:  http://webhome.csc.uvic.ca/~sae/seng265/fall04/tips/s265s047-tips/bash-using-colors.html
   # - See colors:  https://en.wikipedia.org/wiki/ANSI_escape_code#Unix-like_systems
@@ -96,7 +96,7 @@ createPluginZipFile() {
 # For example, TSTool may be run headless on a server to output to CGI,
 # where stdout formatting is important.
 echoStderr() {
-  ${echo2} "$@" >&2
+  ${echo2} "$@" 1>&2
 }
 
 # Get the plugin version (e.g., 1.2.0):
@@ -115,7 +115,8 @@ getPluginVersion() {
     # Don't echo error to stdout.
     echoStderr "[ERROR] Source file with version does not exist:"
     echoStderr "[ERROR]   ${srcFile}"
-    cat ""
+    # Output an empty string as the version.
+    echo ""
   fi
 }
 
@@ -133,7 +134,7 @@ setJavaInstallHome() {
   javaInstallHome='/C/Program Files/Java/jdk8'
   if [ ! -d "${javaInstallHome}" ]; then
     echoStderr ""
-    echoStderr "[ERROR] ${errorColor}Unable to determine Java location.  Exiting,${endColor}"
+    echoStderr "${errorColor}[ERROR] Unable to determine Java location.  Exiting,${endColor}"
     exit 1
   fi
 }
@@ -163,7 +164,7 @@ sevenzip='/C/Program Files/7-Zip/7z.exe'
 # Get the TSTool major version to find the installed files.
 tstoolMajorVersion=$(getTSToolMajorVersion)
 if [ -z "${tstoolMajorVersion}" ]; then
-  echoStderr "[ERROR] ${errorColor}Unable to determine TSTool major version.${endColor}"
+  echoStderr "${errorColor}[ERROR] Unable to determine TSTool major version.${endColor}"
   exit 1
 else
   echoStderr "[INFO] TSTool major version:  ${tstoolMajorVersion}"
@@ -172,7 +173,7 @@ fi
 # Get the plugin version, which is used in the installer file name.
 pluginVersion=$(getPluginVersion)
 if [ -z "${pluginVersion}" ]; then
-  echoStderr "[ERROR] ${errorColor}Unable to determine plugin version.${endColor}"
+  echoStderr "${errorColor}[ERROR] Unable to determine plugin version.${endColor}"
   exit 1
 else
   echoStderr "[INFO] Plugin version:  ${pluginVersion}"
@@ -195,8 +196,8 @@ versionPluginFolder="${mainPluginFolder}/${pluginVersion}"
 # Jar file for the plugin.
 jarFile="${versionPluginFolder}/owf-tstool-timesheetscom-plugin-${pluginVersion}.jar"
 
-# Folder for dependencies.
-pluginDepFolder="${versionPluginsFolder}/dep"
+# Plugin dependency folder.
+pluginDepFolder="${versionPluginFolder}/dep"
 
 now=$(date +%Y%m%d%H%M)
 zipFile="${distFolder}/tstool-timesheetscom-plugin-${pluginVersion}-win-${now}.zip"
