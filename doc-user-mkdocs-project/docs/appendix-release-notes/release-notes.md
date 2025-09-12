@@ -27,6 +27,7 @@ TSTool and Plugin Version Compatibility
 Plugin release notes are listed below.
 The repository issue for release note item is shown where applicable.
 
+*   [Version 2.0.1](#version-201)
 *   [Version 2.0.0](#version-200)
 *   [Version 1.1.7](#version-117)
 *   [Version 1.1.6](#version-116)
@@ -41,11 +42,22 @@ The repository issue for release note item is shown where applicable.
 
 ----------
 
+## Version 2.0.1 ##
+
+**Maintenance release to improve troubleshooting.**
+
+*   ![change](change.png) [#21] Output response error messages to the log file when the HTTP status indicates an error.
+*   ![change](change.png) [#21] Add the `RetryMax`
+    [datastore configuration file](../datastore-ref/TimesheetsCom/TimesheetsCom.md)
+    property to control how many retries occur when reading data,
+    useful for software development.
+*   ![change](change.png) Changed some logging messages to be enabled only in debug mode to shorten the log file length.
+
 ## Version 2.0.0 ##
 
 **Major release to use Java 11.**
 
-*   ![change](change.png) Update the plugin to use Java 11:
+*   ![change](change.png) [#20] Update the plugin to use Java 11:
     +   The Java version is consistent with TSTool 15.0.0.
     *   The plugin installation now uses a version folder,
         which allows multiple versions of the plugin to be installed at the same time,
@@ -159,7 +171,7 @@ The repository issue for release note item is shown where applicable.
 
 **Feature release - initial production release.**
 
-*   ![new](new.png) [1.0.0] Initial production release:
+*   ![new](new.png) Initial production release:
     +   Main TSTool window includes browsing features to list TimesheetsCom time series.
     +   [TSID for TimesheetsCom](../command-ref/TSID/TSID.md) are recognized to read time series with default parameters.
     +   The [`ReadTimesheetsCom`](../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command is provided to automate

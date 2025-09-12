@@ -167,9 +167,17 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 	List<User> userList = new ArrayList<>();
 
 	/**
-	 * Global debug option for datastore, used for development and troubleshooting.
+	 * Global debug option for datastore, used for development and troubleshooting:
+	 * = set 'Debug = true' in the datastore configuration file to enable debugging
 	 */
 	private boolean debug = false;
+
+	/**
+	 * Global debug option for datastore, used for development and troubleshooting:
+	 * = set 'RetryMax = 0' to turn off retries
+	 * - otherwise the default large number will let the retry time to control
+	 */
+	private int retryMax = 1000000;
 
 	/**
 	Constructor for web service.
@@ -184,6 +192,16 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		if ( (prop != null) && prop.equalsIgnoreCase("true") ) {
 			Message.printStatus(2, routine, "Datastore \"" + name + "\" - detected Debug=true");
 			this.debug = true;
+		}
+		prop = props.getValue("RetryMax");
+		if ( prop != null ) {
+			try {
+				this.retryMax = Integer.valueOf(prop);
+				Message.printStatus(2, routine, "Datastore \"" + name + "\" - detected RetryMax=" + this.retryMax);
+			}
+			catch ( NumberFormatException e ) {
+				Message.printWarning(3, routine, "Datastore \"" + name + "\" - Invalid RetryMax=" + prop + " (ignoring).");
+			}
 		}
 	    setName ( name );
 	    setDescription ( description );
@@ -1159,7 +1177,9 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		int wait = 0;
 		int waitMax = 600000;
 		JsonNode jsonNode = null;
-		while ( true ) {
+		int retryCount = 0;
+		while ( retryCount <= this.retryMax ) {
+			++retryCount;
 			try {
 				jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
 					this.debug, requestUrl, getHttpRequestProperties(), elements );
@@ -1263,7 +1283,9 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		int wait = 0;
 		int waitMax = 600000;
 		JsonNode jsonNode = null;
-		while ( true ) {
+		int retryCount = 0;
+		while ( retryCount <= this.retryMax ) {
+			++retryCount;
 			try {
 				jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
 					this.debug, requestUrl.toString(), getHttpRequestProperties(), elements );
@@ -1348,14 +1370,14 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		// - read first because may be used for later logic
 
 		try {
-			List<ServerConstants> serverConstantsList = readServerConstants();
+			List<ServerConstants> serverConstantsList = readServerConstants ();
 			if ( serverConstantsList.size() == 1 ) {
 				this.serverConstants = serverConstantsList.get(0).getServerConstants();
 				Message.printStatus(2, routine, "Read " + this.serverConstants.size() + " server constants." );
 			}
 			else {
 				Message.printWarning(3, routine, "Error reading global server constants (read " +
-					serverConstantsList.size() + " 'data' objects.");
+					serverConstantsList.size() + " 'data' objects).");
 			}
 		}
 		catch ( Exception e ) {
@@ -1565,7 +1587,9 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		int wait = 0;
 		int waitMax = 600000;
 		JsonNode jsonNode = null;
-		while ( true ) {
+		int retryCount = 0;
+		while ( retryCount <= this.retryMax ) {
+			++retryCount;
 			try {
 				jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
 					debug, requestUrl.toString(), getHttpRequestProperties(), elements );
@@ -1695,7 +1719,9 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		// Maximum milliseconds to wait so that the software does not hang:
 		// - 10 minutes, but hopefully will never be that high
 		int waitMax = 600000;
-		while ( true ) {
+		int retryCount = 0;
+		while ( retryCount <= this.retryMax ) {
+			++retryCount;
 			// Loop backward in time by calendar year:
 			// - the API only allows reading one year;
 			//   although it could be extended, use one year queries for general use
@@ -1851,7 +1877,7 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
     }
  	* @return a list of ServerConstant.
  	*/
-	private List<ServerConstants> readServerConstants() throws IOException {
+	private List<ServerConstants> readServerConstants ( ) throws IOException {
 		String routine = getClass().getSimpleName() + ".readServerConstants";
 		String requestUrl = getServiceRootURI() + COMMON_REQUEST_PARAMETERS + "/server/constants";
 		Message.printStatus(2, routine, "Reading server constants from: " + requestUrl);
@@ -1863,13 +1889,15 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		int wait = 0;
 		int waitMax = 600000;
 		JsonNode jsonNode = null;
-		while ( true ) {
+		int retryCount = 0;
+		while ( retryCount <= this.retryMax ) {
+			++retryCount;
 			try {
 				jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (
 					this.debug, requestUrl, getHttpRequestProperties(), elements );
 			}
 			catch ( HttpCodeException e ) {
-				Message.printStatus(2, routine, "HTTP code " + e.getCode() + " was returned indicating need to space out requests.");
+				Message.printStatus(2, routine, "HTTP code " + e.getCode() + " was returned, which may indicate a need to space out requests.");
 				if ( e.getCode() == 420 ) {
 					// The request is being made too fast so build in a wait.
 					if ( wait == 0 ) {
@@ -1909,8 +1937,10 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 				//Message.printStatus(2, routine, "  Read " + jsonNode.size() + " server constants.");
 				serverConstantsList.add((ServerConstants)JacksonToolkit.getInstance().treeToValue(jsonNode, ServerConstants.class));
 				Map<String,Object> constants = serverConstantsList.get(0).getServerConstants();
-				for ( Map.Entry<String, Object> entry : constants.entrySet() ) {
-					Message.printStatus(2, routine, "Server constant " + entry.getKey() + " = " + entry.getValue() );
+				if ( this.debug ) {
+					for ( Map.Entry<String, Object> entry : constants.entrySet() ) {
+						Message.printStatus(2, routine, "Server constant " + entry.getKey() + " = " + entry.getValue() );
+					}
 				}
 				// Break out of the read loop.
 				break;
@@ -2451,7 +2481,9 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 		// If the HTTP request returns 420, need to wait and try again.
 		int wait = 0;
 		int waitMax = 600000;
-		while ( true ) {
+		int retryCount = 0;
+		while ( retryCount <= this.retryMax ) {
+			++retryCount;
 			JsonNode jsonNode = null;
 			try {
 				jsonNode = JacksonToolkit.getInstance().getJsonNodeFromWebServiceUrl (

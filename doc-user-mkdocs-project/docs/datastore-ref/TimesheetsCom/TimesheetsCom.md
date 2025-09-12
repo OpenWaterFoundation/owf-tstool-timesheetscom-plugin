@@ -5,6 +5,7 @@
 *   [Other Specifications and Integration Considerations](#other-specifications-and-integration-considerations)
 *   [Limitations](#limitations)
 *   [Datastore Configuration File](#datastore-configuration-file)
+*   [Troubleshooting](#troubleshooting)
 *   [See Also](#see-also)
 
 --------------------
@@ -211,7 +212,10 @@ Authorization = "INSERT AUTHORIZATION"
 # Known maximum daily limit (default is one year):
 # - specify to increase the size of data read to increase performance
 RequestDayLimit = 2500
+# Use the following to enable debugging messages in the log file.
 # Debug = True
+# Spcify the following to limit data read retries, useful during software development.
+# RetryMax = 0
 ```
 
 **<p style="text-align: center;">
@@ -235,15 +239,34 @@ TimesheetsCom Web Services DataStore Configuration File Properties
 | `Enabled` | Indicates whether the datastore is enabled. | `True` |
 | `Name`<br>**required** | Datastore name that is used in the TSTool software and TimesheetsCom plugin commands.  The name should be unique across all datastores. | None - must be specified. |
 | `RequestDayLimit` | The `timesheets.com` account limit for the number of days that can be requested in an API call.  The default is typically one year but can be increased by contacting `timesheets.com`.  A larger limit allows more data to be requested and avoid HTTP 420 errors, which require spacing out calls and slowing down the software. Currently the value cannot be determined from the API. | The plugin assumes one year based on website warnings when a larger period is requested. |
+| `RetryMax` | Maximum number of retries if a request fails.  Retries are normally used to handle throttling by Timesheets.com services.  Setting to `0` will disable retries and incomplete data may result.  This is mainly used during software development to more quickly test web services authentication and other startup tasks. | Retries are limited by the wait time between retries (.5 second) and maximum wait time for retries (600 seconds). |
 | `ServiceApiDocumentationURI` | The URL for the web services API documentation, specific to the system.  This is used by software to display system-specific documentation. | Documentation will not be available from command editors. |
 | `ServiceRootURI`<br>**required** | The root URL for the web services.  This should include everything except the service name and query parameters (the specific service name and query parameters are automatically specified by software to query data). | None - must be specified. |
 | `Type`<br>**required** | Must be `TimesheetsComDataStore`, which is used by TSTool to identify which plugin software to use for the datastore. | None - must be specified. |
 
+## Troubleshooting ##
+
+Datastore problems will impact commands that try to read data from web services.
+Check the following:
+
+1.  Review the TSTool log file (see ***Tools / Diagnostics - View Log File*** for current and startup log file.)
+    The startup log file will indicate errors connecting to web services.
+2.  Confirm that the authorization information in the datastore configuration file is correct.
+    If necessary, use the [timesheets.com](https://timesheets.com) website ***Tools*** page
+    to generate new API key and authorization token.
+3.  Set the `Debug = true` property in the datastore configuration file to enable debugging.
+    Restart TSTool.  See the log files for increased logging output.
+4.  Use the command line `curl` program to query the URL.
+    Appropriate headers will need to be added for authentication.
+    See the [timesheets.com](https://timesheets.com) website ***Tools*** page for information.
+
 ## See Also 
 
-*   [TimesheetsCom TSID](../../command-ref/TSID/TSID.md) command
-*   [`ReadDelimitedFile`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/ReadDelimitedFile/ReadDelimitedFile/) command
-*   [`ReadTimesheetsCom`](../../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md) command
-*   [`ReadTableFromDelimitedFile`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/ReadTableFromDelimitedFile/ReadTableFromDelimitedFile/) command
-*   [`ReadTableFromJSON`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/ReadTableFromJSON/ReadTableFromJSON/) command
-*   [`WebGet`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/WebGet/WebGet/) command
+Commands:
+
+*   [TimesheetsCom TSID](../../command-ref/TSID/TSID.md)
+*   [`ReadDelimitedFile`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/ReadDelimitedFile/ReadDelimitedFile/)
+*   [`ReadTimesheetsCom`](../../command-ref/ReadTimesheetsCom/ReadTimesheetsCom.md)
+*   [`ReadTableFromDelimitedFile`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/ReadTableFromDelimitedFile/ReadTableFromDelimitedFile/)
+*   [`ReadTableFromJSON`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/ReadTableFromJSON/ReadTableFromJSON/)
+*   [`WebGet`](https://opencdss.state.co.us/tstool/latest/doc-user/command-ref/WebGet/WebGet/)
