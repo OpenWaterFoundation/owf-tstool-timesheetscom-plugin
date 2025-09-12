@@ -112,16 +112,8 @@ public class JacksonToolkit {
 		String routine = getClass().getSimpleName() + ".getJsonNodeFromWebServicesUrl";
 		JsonNode results = null;
 		URL request = null;
-		// Local debugging.
+		// Reset the value to control local debugging.
 		//debug = false;
-
-		// TODO smalers 219-09-04 this is in HydroBase REST but results in double query of the web service!
-		//if ( !httpResponse200(url) ) {
-			//Message.printWarning(2, routine, "Error: " + url + " returned a 404 error");
-			//return null;
-		//}
-
-		//System.out.println(url);
 
 		// Whether the URL was read OK.
 		boolean didRead = false;
@@ -137,9 +129,14 @@ public class JacksonToolkit {
 				if ( responseCode != 200 ) {
 					Message.printWarning(2, routine, "HTTP response code = " + responseCode );
 					didRead = false;
+					// Output the contents here because it won't be output below.
+					Message.printStatus(2, routine, "URL response string: " + urlResponse.getResponse() );
+					Message.printStatus(2, routine, "URL error string: " + urlResponse.getResponseError() );
 				}
 				else {
+					Message.printStatus(2, routine, "HTTP response code = " + responseCode );
 					didRead = true;
+					// The response string is converted to JsonNode below.
 				}
 			}
 			catch ( Exception e ) {
@@ -199,7 +196,7 @@ public class JacksonToolkit {
 							}
 							else {
 								if ( debug ) {
-									Message.printDebug(1, routine, "Positioned JSON node at element \"" + element + "\", results=" + results );
+									Message.printStatus(2, routine, "Positioned JSON node at element \"" + element + "\", results=" + results );
 								}
 								else {
 									Message.printDebug(1, routine, "Positioned JSON node at element \"" + element + "\"." );
@@ -231,6 +228,7 @@ public class JacksonToolkit {
 			Message.printWarning(2, routine, "IOException (" + e + ").");
 			throw e;
 		}
+		// Else, the exception will be handled in calling code.
 
 		if ( !didRead && (responseCode != 200) ) {
 			throw new HttpCodeException("HTTP request had an error (" + responseCode + ").", responseCode );

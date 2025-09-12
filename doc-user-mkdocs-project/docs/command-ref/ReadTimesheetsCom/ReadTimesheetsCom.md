@@ -249,8 +249,8 @@ Example Graph to Identify New Data (<a href="../example-new-data-graph.png">see 
 If listing time series or retrieving data has errors, try the following:
 
 1.  Review the TSTool log file (see ***Tools / Diagnostics - View Log File*** for current and startup log file.)
-2.  Confirm that the authorization information in the datastore configuration file is correct.
-3.  Use command line `curl` to query the URL.
+    The startup log file will indicate errors connecting to web services.
+2.  See the datastore [Troubleshooting](../../datastore-ref/TimesheetsCom/TimesheetsCom.md#troubleshooting) documentation.
 
 If the command pauses while running:
 
