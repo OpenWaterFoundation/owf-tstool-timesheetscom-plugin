@@ -220,10 +220,6 @@ public class JacksonToolkit {
 			Message.printWarning(2, routine, "Error mapping JSON response from \"" + request + "\" (" + e + ").");
 			throw e;
 		}
-		catch ( MalformedURLException e ) {
-			Message.printWarning(2, routine, "Malformed URL has occured. URL=\"" + url + "\" (" + e + ").");
-			throw e;
-		}
 		catch ( IOException e ) {
 			Message.printWarning(2, routine, "IOException (" + e + ").");
 			throw e;
