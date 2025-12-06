@@ -216,6 +216,22 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
         this.pluginProperties.put("Description", "Plugin to integrate TSTool with timesheets.com web services.");
         this.pluginProperties.put("Author", "Open Water Foundation, https://openwaterfoundation.org");
         this.pluginProperties.put("Version", PluginMeta.VERSION);
+        // Set the location of the Jar file, which is useful to confirm what was loaded.
+        try {
+        	this.pluginProperties.put("JarFile",
+        		this.getClass()
+                .getProtectionDomain()
+                .getCodeSource()
+                .getLocation()
+                .toURI()
+                .getPath() );
+        }
+        catch ( Exception e ) {
+        	// Backup in case the above does not work.
+            String classFile = this.getName().replace('.', '/') + ".class";
+            String resource = this.getClass().getClassLoader().getResource(classFile).toString();
+        	this.pluginProperties.put("JarFile",resource);
+        }
 
 	    // Read global data used throughout the session:
 	    // - in particular a cache of the TimeSeriesCatalog used for further queries
@@ -906,6 +922,37 @@ public class TimesheetsComDataStore extends AbstractWebServiceDataStore implemen
 			this.tscatalogList = readTimeSeriesCatalog(tsid, dataTypeReq, dataIntervalReq, ifp);
 		}
 		return this.tscatalogList;
+	}
+
+	/**
+ 	* Return the comments for a time series in the table model.
+ 	* The comments are added as commands prior to the TSID comment.
+ 	* Currently, the TSID is readable enough so return empty comments.
+ 	* @param tableModel the table model from which to extract data
+ 	* @param row the displayed table row, may have been sorted
+ 	* @return a list of comments (return null or an empty list to not add comments to commands).
+ 	* A single comment is returned.
+ 	*/
+	public List<String> getTimeSeriesCommentsFromTableModel ( @SuppressWarnings("rawtypes") JWorksheet_AbstractRowTableModel tableModel, int row ) {
+    	TimesheetsCom_TimeSeries_TableModel tm = (TimesheetsCom_TimeSeries_TableModel)tableModel;
+    	// Should not have any nulls.
+    	List<String> comments = new ArrayList<>();
+    	StringBuilder commentBuilder = new StringBuilder();
+    	/*
+    	String stationName = (String)tableModel.getValueAt(row,tm.COL_STATION_NAME);
+    	String datastreamId = (String)tableModel.getValueAt(row,tm.COL_DATASTREAM_ID);
+    	String assetModel = (String)tableModel.getValueAt(row,tm.COL_ASSET_MODEL);
+    	String assetDescription = (String)tableModel.getValueAt(row,tm.COL_ASSET_DESCRIPTION);
+    	commentBuilder.append(stationName);
+    	commentBuilder.append(", ");
+    	commentBuilder.append(assetModel);
+    	commentBuilder.append(" ");
+    	commentBuilder.append(assetDescription);
+    	commentBuilder.append(", datastream=");
+    	commentBuilder.append(datastreamId);
+    	*/
+    	comments.add(commentBuilder.toString() );
+    	return comments;
 	}
 
 	/**
