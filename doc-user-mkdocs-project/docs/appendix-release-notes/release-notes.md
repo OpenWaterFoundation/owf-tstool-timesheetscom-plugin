@@ -27,6 +27,7 @@ TSTool and Plugin Version Compatibility
 Plugin release notes are listed below.
 The repository issue for release note item is shown where applicable.
 
+*   [Version 2.0.2](#version-202)
 *   [Version 2.0.1](#version-201)
 *   [Version 2.0.0](#version-200)
 *   [Version 1.1.7](#version-117)
@@ -41,6 +42,13 @@ The repository issue for release note item is shown where applicable.
 *   [Version 1.0.0](#version-100)
 
 ----------
+
+## Version 2.0.2 ##
+
+**Maintenance release to implement plugin requirements.**
+
+*   ![change](change.png) [#23] Add the `JarFile` property to the plugin so that the information
+    can be displayed in the TSTool ***View / Datastores*** view for troubleshooting.
 
 ## Version 2.0.1 ##
 
